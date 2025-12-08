@@ -10,8 +10,7 @@ numpy
 scikit-learn # Aunque no lo usamos directamente en la API, es útil para el entrenamiento
 
 # Fuentes de Datos (Críticas)
-tvDatafeed
-
+tvDatafeed==2.0.21
 # Inteligencia Artificial (El Cerebro)
 torch
 # Si se usa DRL como PPO, se necesitaría:
@@ -20,4 +19,5 @@ torch
 # Pero para la API de predicción, solo necesitamos torch y numpy.
 
 # Utilidades
+
 pydantic
