@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SKIBOSS AI Trading Signal</title>
+    <link rel="stylesheet" href="styles.css"> 
+</head>
+<body>
+
+    <header>
+        <h1>🤖 SKIBOSS AI Trading System</h1>
+    </header>
+
+    <main>
+        <section id="controls" class="card">
+            <h2>Petición de Señal</h2>
+            <div class="input-group">
+                <label for="symbol">Símbolo (Ej: SPY, TSLA, BTCUSD):</label>
+                <input type="text" id="symbol" value="SPY" required>
+            </div>
+            
+            <div class="input-group">
+                <label for="timeframe">Timeframe:</label>
+                <select id="timeframe">
+                    <option value="1h">1 Hora</option>
+                    <option value="4h">4 Horas</option>
+                    <option value="1d">1 Día</option>
+                    <option value="15m">15 Minutos</option>
+                </select>
+            </div>
+
+            <button id="getSignalBtn">Obtener Señal</button>
+        </section>
+
+        <section id="output" class="card hidden">
+            <h2>Resultados de la IA</h2>
+            <div id="signal-result">
+                </div>
+            
+            <div id="explanation-area">
+                </div>
+
+            <p class="disclaimer">⚠️ Disclaimer: Esta es una herramienta de análisis. Opere bajo su propia responsabilidad.</p>
+        </section>
+        
+        <section id="chart-area" class="card">
+            <h2>Gráfico de TradingView</h2>
+            <iframe id="tradingview-widget"
+                src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview-widget&symbol=NASDAQ%3ASPY&interval=60&hidesidetoolbar=0&hidelist=1&theme=dark&style=1&timezone=America%2FSantiago"
+                width="100%"
+                height="400"
+                frameborder="0"
+                allowfullscreen>
+            </iframe>
+        </section>
+    </main>
+
+    <footer>
+        <p>Modelo DRL/SMC - Versión: <span id="model-version">Cargando...</span></p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
