@@ -1,72 +1,50 @@
-# skiboss/backend/tradingview_api.py
-
 import pandas as pd
-from tvDatafeed import TvDatafeed, Interval
-from tvDatafeed.main import NoDataFound
+import yfinance as yf
+from datetime import datetime, timedelta
+from typing import Dict, Any
 
-# NOTA IMPORTANTE:
-# Si bien tvDatafeed permite el modo sin login, la estabilidad 
-# y la obtención de datos de alto volumen (para perfiles) mejora 
-# si usas un login. Aquí lo configuramos en modo anónimo por defecto.
-try:
-    # Se inicializa el objeto TvDatafeed
-    tv = TvDatafeed()
-    print("✅ TvDatafeed inicializado.")
-except Exception as e:
-    print(f"❌ Error al inicializar TvDatafeed: {e}")
-    tv = None # Aseguramos que la variable sea None si falla
-
-# Mapeo de Timeframes solicitados a objetos Interval de tvDatafeed
+# Mapeo de Timeframes a intervalos de yfinance
 INTERVAL_MAP = {
-    '1m': Interval.in_1_minute, '5m': Interval.in_5_minute, 
-    '15m': Interval.in_15_minute, '30m': Interval.in_30_minute,
-    '1h': Interval.in_1_hour, '4h': Interval.in_4_hour, 
-    '1d': Interval.in_1_day, '1wk': Interval.in_1_week
+    '1m': '1m', '5m': '5m', '15m': '15m', '30m': '30m',
+    '1h': '1h', '4h': '4h', '1d': '1d', '1wk': '1wk'
 }
 
 async def fetch_historic_data(symbol: str, tf: str) -> pd.DataFrame:
     """
-    Obtiene datos OHLCV, incluyendo volumen por barra de TradingView.
+    Obtiene datos OHLCV de Yahoo Finance.
     
     :param symbol: Símbolo del activo (ej: 'SPY').
-    :param tf: Timeframe (ej: '1h').
+    :param tf: Timeframe (ej: '1m').
     :return: DataFrame de pandas con datos OHLCV y volumen.
     """
-    if tv is None:
-        print("❌ Error: TvDatafeed no está inicializado.")
-        return pd.DataFrame()
-
-    interval = INTERVAL_MAP.get(tf.lower())
-    if not interval:
-        print(f"❌ Error: Timeframe '{tf}' no soportado o inválido.")
-        return pd.DataFrame()
+    
+    # Usar el timeframe solicitado o forzar a 1m como la granularidad más alta
+    interval = INTERVAL_MAP.get(tf.lower()) or '1m'
+    
+    # Para 1m, yfinance solo permite un máximo de 7 días de data.
+    if interval == '1m':
+        period = '7d' 
+    elif 'h' in interval or 'd' in interval:
+        period = '60d' # 60 días para análisis de medio plazo
+    else:
+        period = '5y' # Para entrenamiento o análisis histórico
 
     try:
-        # Intentamos obtener 500 barras (suficiente para análisis de perfil/SMC)
-        # Usamos 'NASDAQ' como exchange por defecto, pero se puede parametrizar.
-        data = tv.get_hist(symbol=symbol, exchange='NASDAQ', interval=interval, n_bars=500)
+        # Descargar data
+        data = yf.download(symbol, interval=interval, period=period, progress=False)
         
-    except NoDataFound:
-        print(f"❌ Error: No se encontraron datos para {symbol} en {tf}.")
-        return pd.DataFrame()
     except Exception as e:
-        print(f"❌ Error al obtener datos de TradingView para {symbol}: {e}")
+        print(f"❌ Error al obtener datos de Yahoo Finance para {symbol}: {e}")
         return pd.DataFrame()
     
-    if data is None or data.empty:
+    if data.empty:
         return pd.DataFrame()
     
-    # Normalizar nombres de columnas para que sean consistentes con los módulos de indicadores
-    # Cambiamos 'open', 'high', 'low', 'close', 'volume' a minúsculas
+    # Normalizar nombres de columnas
     data.columns = [c.lower() for c in data.columns]
     
-    # Asegurarse de que el índice sea temporal y esté ordenado
+    # Limpieza final
+    if 'adj close' in data.columns:
+        data = data.drop(columns=['adj close'])
+        
     return data.sort_index()
-
-# -----------------------------------------------------------
-# NOTA sobre yahoo_api.py:
-# Este proyecto puede usar AlphaVantage o Yahoo (que es más simple para live pricing).
-# Ya que tvDatafeed nos da datos históricos de alta calidad para SMC, solo
-# incluimos el fetch principal aquí. Si se requiere live pricing exacto
-# y muy rápido, crearemos un wrapper simple en yahoo_api.py más adelante.
-# -----------------------------------------------------------
