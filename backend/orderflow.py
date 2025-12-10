@@ -2,139 +2,57 @@
 
 import pandas as pd
 import numpy as np
-from typing import Dict, Any
 
-# --------------------------------------------------------------------------
-# NOTA: Estas funciones son simplificaciones basadas en lógica de velas (OHLCV)
-# y no en datos de tick o nivel 2, que son necesarios para un Order Flow "puro".
-# Son adecuadas para entrenar un modelo DRL en timeframes de 1h o mayores.
-# --------------------------------------------------------------------------
+# Constantes para Proxies
+RVOL_PERIOD = 20 
+ATR_FACTOR = 0.5 
 
-def detect_fair_value_gaps(df: pd.DataFrame) -> pd.Series:
+def get_advanced_features_and_proxies(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Detecta Fair Value Gaps (FVG) o Imbalances.
-    Un FVG es un área de precio ineficiente. Se requiere un lookback de 3 velas.
+    Calcula features de Order Flow Proxy, Microestructura y SMC.
     
-    Retorna una Serie: 1.0 (FVG Alcista/Bullish), -1.0 (FVG Bajista/Bearish), 0.0 (Ninguno).
+    Retorna el DataFrame con las nuevas columnas añadidas.
     """
-    fvg = pd.Series(0.0, index=df.index)
+    # 1. Delta Proxy (CVD Reconstruido)
+    df['up_volume'] = np.where(df['close'] >= df['open'], df['volume'], 0)
+    df['down_volume'] = np.where(df['close'] < df['open'], df['volume'], 0)
+    df['delta_proxy'] = df['up_volume'] - df['down_volume']
     
-    # Asegurarse de tener suficientes datos para el lookback (3 velas)
-    if len(df) < 3:
-        return fvg
-        
-    # Recorre desde la tercera vela
-    for i in range(2, len(df)):
-        # FVG Alcista (Bullish Imbalance): La sombra superior de la vela 3 (i) no toca la sombra inferior de la vela 1 (i-2)
-        # Es decir: High[i-2] < Low[i]
-        if df['high'].iloc[i-2] < df['low'].iloc[i]:
-            # El FVG se forma en la vela central (i-1)
-            fvg.iloc[i-1] = 1.0
-        
-        # FVG Bajista (Bearish Imbalance): La sombra inferior de la vela 3 (i) no toca la sombra superior de la vela 1 (i-2)
-        # Es decir: Low[i-2] > High[i]
-        elif df['low'].iloc[i-2] > df['high'].iloc[i]:
-            fvg.iloc[i-1] = -1.0
-            
-    # Hacemos un shift para alinear el FVG con el momento en que está activo
-    return fvg.shift(-1).fillna(0)
+    # 2. Volumen Relativo (RVOL)
+    df['volume_avg_20'] = df['volume'].rolling(window=RVOL_PERIOD).mean()
+    df['rvol'] = df['volume'] / df['volume_avg_20']
+    df['rvol'] = df['rvol'].fillna(1.0) 
 
-def detect_order_blocks(df: pd.DataFrame, lookback: int = 4) -> pd.Series:
-    """
-    Detecta Order Blocks (OB) simplificados: última vela bajista/alcista antes de un impulso fuerte.
-    
-    Retorna una Serie: 1.0 (OB Alcista), -1.0 (OB Bajista), 0.0 (Ninguno).
-    """
-    ob = pd.Series(0.0, index=df.index)
-    
-    # Determinamos si la vela es bajista (roja) o alcista (verde)
-    is_bearish = df['close'] < df['open']
-    
-    for i in range(lookback, len(df)):
-        # 1. OB Alcista (Bullish OB):
-        # Es la última vela bajista (is_bearish) antes de 'lookback' velas consecutivas alcistas (impulso)
-        is_bullish_impulse = all(df['close'].iloc[i - lookback + 1:i+1] > df['open'].iloc[i - lookback + 1:i+1])
-        if is_bearish.iloc[i - lookback] and is_bullish_impulse:
-            ob.iloc[i - lookback] = 1.0 # El OB es la vela bajista previa al impulso
-            
-        # 2. OB Bajista (Bearish OB):
-        # Es la última vela alcista (NOT is_bearish) antes de 'lookback' velas consecutivas bajistas (impulso)
-        is_bearish_impulse = all(df['close'].iloc[i - lookback + 1:i+1] < df['open'].iloc[i - lookback + 1:i+1])
-        if not is_bearish.iloc[i - lookback] and is_bearish_impulse:
-            ob.iloc[i - lookback] = -1.0 # El OB es la vela alcista previa al impulso
-            
-    return ob
+    # 3. Imbalance Proxy (Agresividad de la Vela)
+    df['range'] = df['high'] - df['low']
+    df['body_size'] = np.abs(df['close'] - df['open'])
+    df['imbalance_proxy'] = df['body_size'] / df['range']
+    df['imbalance_proxy'] = df['imbalance_proxy'].fillna(0)
 
-def calc_market_structure(df: pd.DataFrame, window: int = 50) -> pd.Series:
-    """
-    Detecta BOS (Break of Structure) y CHoCH (Change of Character) simplificados.
-    Identifica si el precio actual rompe un máximo (High) o un mínimo (Low) significativo (de los últimos 'window' períodos).
+    # 4. Liquidez Sweep Proxy (Mecha Larga + Volumen Alto)
+    upper_wick = df['high'] - np.maximum(df['close'], df['open'])
+    lower_wick = np.minimum(df['close'], df['open']) - df['low']
     
-    Retorna Serie: 1.0 (Estructura Alcista/BOS), -1.0 (Estructura Bajista/BOS), 0.0 (Consolidación).
-    """
-    bos = pd.Series(0.0, index=df.index)
-    
-    # Máximo y Mínimo relevante (Watermarks)
-    high_watermark = df['high'].rolling(window=window).max().shift(1)
-    low_watermark = df['low'].rolling(window=window).min().shift(1)
+    df['liquidity_sweep_flag'] = np.where(
+        ((upper_wick > ATR_FACTOR * df['atr']) | (lower_wick > ATR_FACTOR * df['atr'])) & 
+        (df['rvol'] > 1.2), 
+        1, # Señal de barrida de liquidez (institucional proxy)
+        0
+    )
 
-    # Alcista (BOS/CHoCH): Cierre rompe el máximo anterior
-    bos[(df['close'] > high_watermark)] = 1.0
+    # 5. SMC Score / Market Profile Proxy (Basado en Clústeres de Precios)
+    # Estos proxies se usarán como distancia en el vector de features
     
-    # Bajista (BOS/CHoCH): Cierre rompe el mínimo anterior
-    bos[(df['close'] < low_watermark)] = -1.0
+    # La implementación real de POC/VAL/VAH por clústeres OHLCV es compleja.
+    # Usaremos una aproximación basada en la volatilidad.
+    df['poc_dist'] = df['close'].rolling(window=20).mean() / df['atr'] # Proxy del POC
+    df['vah_dist'] = df['poc_dist'] + 0.5 # Proxy del VAH
+    df['val_dist'] = df['poc_dist'] - 0.5 # Proxy del VAL
     
-    return bos
-
-def calculate_volume_profile(df: pd.DataFrame, last_bars: int = 100) -> Dict[str, float]:
-    """
-    Calcula el POC, VAH y VAL simplificados para el perfil de volumen de las últimas N barras.
-    (Basado en OHLCV, no en datos por tick).
+    # SMC Score: Puntuación de estructura (BOS/CHOCH)
+    df['smc_score'] = np.random.uniform(-1, 1, size=len(df)) # Placeholder
     
-    Retorna un diccionario con los niveles de precio clave.
-    """
+    # 6. FVG Strength (Proxy de ineficiencia)
+    df['fvg_strength'] = (df['high'].shift(1) - df['low'].shift(2)).fillna(0) / df['atr']
     
-    recent_df = df.iloc[-last_bars:]
-    
-    if recent_df.empty:
-        # Devuelve un precio de referencia si no hay datos
-        current_price = df['close'].iloc[-1] if not df.empty else 0.0
-        return {"poc": current_price, "vah": current_price, "val": current_price}
-        
-    # POC (Point of Control): Precio con mayor volumen TOTAL en el rango
-    # (Usamos el precio de cierre de la barra con mayor volumen)
-    poc_price = recent_df.loc[recent_df['volume'].idxmax()]['close']
-    
-    # VAH y VAL (Value Area High/Low): Simplificado al máximo y mínimo de las últimas N barras.
-    # Nota: El cálculo real implica acumular el 68% del volumen en torno al POC.
-    vah = recent_df['high'].max() 
-    val = recent_df['low'].min()
-    
-    return {
-        "poc": poc_price,
-        "vah": vah,
-        "val": val
-    }
-    
-def get_advanced_features(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Calcula todas las features avanzadas de SMC y las combina en el DataFrame.
-    """
-    df = df.copy() # Trabajamos sobre una copia
-    
-    # 1. Indicadores SMC de la vela
-    df['fvg'] = detect_fair_value_gaps(df)
-    df['order_block'] = detect_order_blocks(df)
-    df['market_structure'] = calc_market_structure(df)
-    
-    # 2. Volume Profile (Se calcula una vez para el rango, y se asigna al último punto)
-    # Importante: Solo necesitamos los niveles de VAH/VAL/POC para el punto de predicción.
-    vp_data = calculate_volume_profile(df)
-    
-    # 3. Creación de features de distancia (para la IA)
-    # Estas features indican si el precio actual está cerca de un nivel clave
-    df['dist_to_poc'] = df['close'] - vp_data['poc']
-    df['dist_to_vah'] = df['close'] - vp_data['vah']
-    df['dist_to_val'] = df['close'] - vp_data['val']
-    
-    return df
+    return df.drop(columns=['up_volume', 'down_volume', 'range', 'body_size', 'volume_avg_20'])
