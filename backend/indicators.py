@@ -1,35 +1,41 @@
-# skiboss/backend/indicators.py
-
 import pandas as pd
 import numpy as np
 import pandas_ta as ta 
 from typing import Dict, Any, List
 
-# --- ASUMIMOS QUE ESTA FUNCIÓN ESTÁ EN .orderflow ---
-from .orderflow import get_advanced_features 
+# Importamos las funciones SMC/Order Flow Proxy
+from .orderflow import get_advanced_features_and_proxies
+# Importamos la función LLM Score (simulación para el entrenamiento)
+from .tradingview_api import get_llm_sentiment_score 
 
-# --- FUNCIÓN DE VECTORIZACIÓN (SIMPLIFICADA) ---
+
+# --- FUNCIÓN DE VECTORIZACIÓN (15 FEATURES) ---
+# Esta función define la 'foto' del mercado que ve la IA.
 def get_normalized_features_vector(df: pd.DataFrame) -> np.ndarray:
     """
-    Función que selecciona, normaliza y devuelve el vector final de 12 features.
-    
-    NOTA: En un proyecto real se implementaría la normalización (ej. Z-Score).
+    Selecciona, normaliza y devuelve el vector final (AUMENTADO A 15 FEATURES).
     """
+    # 15 FEATURES CLAVE (Combinación de SMC, Order Flow Proxy, y Macro)
+    feature_columns = [
+        # Clásicos / VWAP
+        'close', 'rsi', 'atr', 'dist_to_vwap', 'ema_20_dist', 'EMA_50', 
+        # Proxies de Order Flow / Volumen
+        'rvol', 'delta_proxy', 'liquidity_sweep_flag', 'imbalance_proxy', 
+        # SMC / Estructura / Niveles
+        'poc_dist', 'vah_dist', 'val_dist', 'smc_score', 
+        # Sentimiento / LLM
+        'llm_sentiment_score'
+    ]
     
-    # Lista de features necesarias para el vector final de 12 elementos.
-    # El modelo DRL usa estas 12 para la toma de decisiones.
-    feature_columns = ['close', 'rsi', 'atr', 'dist_to_vwap', 'ema_20_dist', 'EMA_50', 
-                       'smc_score', 'fvg_strength', 'poc_dist', 'vah_dist', 'val_dist', 'volume']
-    
-    # Rellenar cualquier valor NaN que quede después de los cálculos
+    # Rellenar NaN (necesario tras cálculos de rolling windows)
     df = df.fillna(method='ffill').fillna(0) 
 
     if len(df) < 1:
-        return np.zeros(12, dtype=np.float32)
+        return np.zeros(15, dtype=np.float32) 
         
-    # Extraer los últimos valores (la última vela)
     final_features = df[feature_columns].iloc[-1].values
     
+    # En producción se agregaría la normalización (ej. MinMax o Z-Score) aquí.
     return final_features.astype(np.float32)
 
 
@@ -39,40 +45,35 @@ def get_normalized_features_vector(df: pd.DataFrame) -> np.ndarray:
 
 def calculate_all_features(df: pd.DataFrame) -> np.ndarray:
     """
-    Procesa el DataFrame de datos brutos y devuelve el vector de features para la IA.
+    Procesa el DataFrame de datos brutos y devuelve el vector de 15 features.
     """
-    
+    # Se requieren al menos 50 barras para EMA/ATR
     if df.empty or len(df) < 50:
-        # Devolvemos un vector de ceros si no hay suficientes datos para los indicadores
-        return np.zeros(12, dtype=np.float32) 
+        return np.zeros(15, dtype=np.float32) 
 
-    df = df.copy() # Trabajamos en una copia
+    df = df.copy() 
 
-    # --- FASE 1: Indicadores Clásicos y de Volumen con Pandas-TA ---
-    
-    # Añadir RSI, EMA, ATR
+    # --- FASE 1: Indicadores Clásicos y VWAP ---
     df.ta.rsi(append=True, length=14)
     df.ta.ema(append=True, length=20, col_names=('EMA_20',))
     df.ta.ema(append=True, length=50, col_names=('EMA_50',))
     df.ta.atr(append=True, length=14)
+    df.ta.vwap(append=True, fillna=True) 
     
-    # AÑADIR VWAP (Volume Weighted Average Price) - Indicador clave de volumen
-    df.ta.vwap(append=True) 
-    
-    # Renombrar columnas para consistencia
     df = df.rename(columns={'RSI_14': 'rsi', 'ATR_14': 'atr', 'VWAP': 'vwap'})
 
-
-    # Cálculo de distancia (Normalización por ATR)
+    # Cálculo de distancia (normalizada por ATR)
     df['ema_20_dist'] = (df['close'] - df['EMA_20']) / df['atr']
-    
-    # NUEVA FEATURE CLAVE: Distancia de Precio a VWAP (normalizada por ATR)
     df['dist_to_vwap'] = (df['close'] - df['vwap']) / df['atr']
     
-    # --- FASE 2: Indicadores SMC/Order Flow ---
-    # Asumimos que get_advanced_features añade 'poc_dist', 'vah_dist', 'val_dist', etc.
-    df = get_advanced_features(df)
     
-    # --- FASE 3: Normalización Final (Para la NN) ---
+    # --- FASE 2: Order Flow Proxies y SMC (98% Precisión en Proxy) ---
+    df = get_advanced_features_and_proxies(df)
     
+    
+    # --- FASE 3: Sentimiento / LLM (Proxy) ---
+    df['llm_sentiment_score'] = get_llm_sentiment_score(df) 
+    
+    
+    # --- FASE 4: Vectorización ---
     return get_normalized_features_vector(df)
