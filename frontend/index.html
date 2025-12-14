@@ -3,101 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SKIBOSS AI - Copiloto Institucional</title>
-    
-    <link rel="stylesheet" href="styles.css">
+    <title>SKIBOSS AI | Institutional DSS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body { background: #0d1117; color: #c9d1d9; font-family: 'Inter', sans-serif; margin: 0; padding: 20px; }
+        .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; max-width: 1000px; margin: 0 auto; }
+        h1 { font-size: 18px; margin-bottom: 20px; color: #ffffff; border-bottom: 1px solid #30363d; padding-bottom: 10px; }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th { text-align: left; color: #8b949e; padding: 10px; border-bottom: 1px solid #30363d; }
+        td { padding: 15px 10px; border-bottom: 1px solid #21262d; }
+        
+        .badge { padding: 4px 8px; border-radius: 4px; font-weight: 600; font-size: 12px; }
+        .long { background: rgba(46, 160, 67, 0.15); color: #3fb950; border: 1px solid rgba(46, 160, 67, 0.4); }
+        .short { background: rgba(248, 81, 73, 0.15); color: #f85149; border: 1px solid rgba(248, 81, 73, 0.4); }
+        
+        .levels span { display: block; font-size: 11px; color: #8b949e; }
+        .levels strong { color: #e6edf3; }
+        
+        .btn { background: #238636; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; float: right; }
+        .btn:hover { background: #2ea043; }
+    </style>
 </head>
 <body>
-    <div class="app-container">
+    <div class="card">
+        <button class="btn" onclick="scanMarket()">↻ Escanear</button>
+        <h1>RADAR INSTITUCIONAL (Edge > 0)</h1>
         
-        <div class="sidebar">
-            <h2>SKIBOSS AI </h2>
-            <a href="#dashboard" class="nav-link active" onclick="showTab('dashboard', this)">1. Dashboard de Recomendaciones</a>
-            <a href="#active" class="nav-link" onclick="showTab('active', this)">2. Entradas Activas</a>
-            <a href="#journal" class="nav-link" onclick="showTab('journal', this)">3. Historial / Diario de Trading</a>
-            <a href="#chart" class="nav-link" onclick="showTab('chart', this)">4. Gráficos del Activo</a>
-        </div>
-
-        <div class="main-content">
-            
-            <div id="dashboard" class="tab-content active">
-                <h1>Dashboard de Recomendaciones</h1>
-                <p>Oportunidades filtradas con Ratio R/R > 2.0 y Seguridad IA > 80%.</p>
-
-                <div class="controls">
-                    <select id="dashboard-timeframe">
-                        <option value="1h">Swing (1 Hora)</option>
-                        <option value="4h">Posicional (4 Horas)</option>
-                        <option value="1d">Largo Plazo (1 Día)</option>
-                    </select>
-                    <select id="dashboard-asset-type">
-                        <option value="ALL">Tipo: Todos</option>
-                        </select>
-                    <button onclick="loadDashboard()">Actualizar Radar</button>
-                </div>
-                
-                <div id="dashboard-status">Cargando análisis masivo...</div>
-
-                <table>
-                    <thead>
-                        <tr>
-                            <th data-sort="symbol">Activo</th>
-                            <th data-sort="asset_type">Tipo</th>
-                            <th data-sort="signal">Señal</th>
-                            <th data-sort="entry_price">Precio Entrada Óptimo</th>
-                            <th data-sort="stop_loss">SL</th>
-                            <th data-sort="take_profit">TP</th>
-                            <th data-sort="rr_ratio">R/R</th>
-                            <th data-sort="expected_roi">ROI (%)</th>
-                            <th data-sort="confidence">Seguridad IA (%)</th>
-                            <th data-sort="duration">Plazo Est.</th>
-                            <th>Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody id="dashboard-table-body">
-                        </tbody>
-                </table>
-            </div>
-
-            <div id="active" class="tab-content">
-                <h1>Entradas Activas (Estado Compartido)</h1>
-                <div id="active-trades-status"></div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Activo</th>
-                            <th>Entrada ($)</th>
-                            <th>Actual ($)</th>
-                            <th>P&L (%)</th>
-                            <th>P&L ($)</th>
-                            <th>Stop/Target</th>
-                            <th>Tiempo Op.</th>
-                            <th>Recomendación DRL</th>
-                            <th>Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody id="active-trades-body">
-                        </tbody>
-                </table>
-            </div>
-
-            <div id="journal" class="tab-content">
-                <h1>Historial / Diario de Trading</h1>
-                <div id="journal-metrics"></div>
-                <div id="journal-history">
-                    </div>
-            </div>
-
-            <div id="chart" class="tab-content">
-                <h1>Gráfico de Contexto (TradingView)</h1>
-                <div id="tradingview-widget-container" style="height: 600px;">
-                    <p style="color: #666; padding-top: 50px; text-align: center;">Selecciona un activo del Dashboard para ver su gráfico y contexto.</p>
-                </div>
-            </div>
-
-        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>ACTIVO</th>
+                    <th>SEÑAL</th>
+                    <th>PRECIO</th>
+                    <th>OBJETIVOS (SL / TP)</th>
+                    <th>WIN RATE</th>
+                    <th>EDGE</th>
+                    <th>CONFIANZA</th>
+                </tr>
+            </thead>
+            <tbody id="radar-body">
+                <tr><td colspan="7" style="text-align:center;">Esperando escaneo...</td></tr>
+            </tbody>
+        </table>
     </div>
 
-    <script src="app.js"></script>
+    <script>
+        async function scanMarket() {
+            const tbody = document.getElementById('radar-body');
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Analizando volatilidad y edge histórico...</td></tr>';
+            
+            try {
+                // Ajusta URL si es necesario
+                const res = await fetch('http://127.0.0.1:8000/radar');
+                const data = await res.json();
+                
+                tbody.innerHTML = '';
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Sin oportunidades claras con Edge positivo.</td></tr>';
+                    return;
+                }
+
+                data.forEach(item => {
+                    const signalClass = item.signal === 'LONG' ? 'long' : 'short';
+                    // Color del Edge: Verde si es positivo, Rojo si es negativo
+                    const edgeColor = item.edge > 0 ? '#3fb950' : '#f85149';
+                    
+                    tbody.innerHTML += `
+                        <tr>
+                            <td style="font-weight:bold; color:white;">${item.ticker}</td>
+                            <td><span class="badge ${signalClass}">${item.signal}</span></td>
+                            <td>$${item.price}</td>
+                            <td class="levels">
+                                <div>SL <strong>$${item.sl}</strong></div>
+                                <div>TP <strong>$${item.tp}</strong></div>
+                            </td>
+                            <td>${item.win_rate}%</td>
+                            <td style="color:${edgeColor}; font-weight:bold;">${item.edge > 0 ? '+' : ''}${item.edge}%</td>
+                            <td>${item.confidence}</td>
+                        </tr>
+                    `;
+                });
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#f85149;">Error de conexión con el Backend.</td></tr>';
+            }
+        }
+    </script>
 </body>
 </html>
