@@ -30,6 +30,14 @@
 
         /* CARDS & TABLES */
         .card { background: var(--card-bg); border-radius: 18px; box-shadow: var(--shadow-soft); overflow: hidden; border: 1px solid rgba(0,0,0,0.02); margin-bottom: 24px; }
+        
+        /* --- CORRECCIÓN DE ALTURA PARA EL GRÁFICO --- */
+        #charts .card {
+            height: 100%; /* Fuerza a ocupar toda la altura */
+            margin-bottom: 0; 
+        }
+        /* --------------------------------------------- */
+
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
         th { text-align: left; padding: 18px 24px; color: var(--text-secondary); font-weight: 600; border-bottom: 1px solid #F2F2F7; background: #FAFAFC; cursor: pointer; user-select: none; }
         th:hover { background: #EAEAEA; color: var(--text-primary); }
