@@ -3,85 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DRL TRADER | AI DSS</title>
+    <title>DRL TRADER | Platinum Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-app: #F5F5F7;
-            --card-bg: #FFFFFF;
-            --glass-header: rgba(255, 255, 255, 0.85);
-            --text-primary: #1D1D1F;
-            --text-secondary: #86868B;
-            --border-light: #D2D2D7;
-            --accent-green: #34c759;
-            --accent-red: #ff3b30;
+            /* TEMA APPLE LIGHT */
+            --bg-app: #F5F5F7; --card-bg: #FFFFFF; --glass-header: rgba(255, 255, 255, 0.85);
+            --text-primary: #1D1D1F; --text-secondary: #86868B; --border-light: #D2D2D7;
+            --accent-green: #34c759; --accent-red: #ff3b30; --accent-blue: #0071e3;
             --shadow-soft: 0 4px 12px rgba(0,0,0,0.05);
         }
-
-        body {
-            font-family: 'Inter', -apple-system, sans-serif;
-            background-color: var(--bg-app);
-            color: var(--text-primary);
-            margin: 0;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        /* HEADER */
-        header {
-            height: 64px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 32px;
-            background: var(--glass-header);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-        }
-        .brand { font-size: 20px; font-weight: 700; color: var(--text-primary); }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-app); color: var(--text-primary); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
+        /* HEADER */
+        header { height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; background: var(--glass-header); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0,0,0,0.05); z-index: 100; }
+        .brand { font-size: 20px; font-weight: 700; color: var(--text-primary); }
         .nav-island { background: #E8E8ED; padding: 4px; border-radius: 10px; display: flex; gap: 2px; }
         .nav-btn { background: transparent; border: none; color: var(--text-secondary); padding: 8px 24px; font-size: 13px; font-weight: 500; border-radius: 7px; cursor: pointer; transition: 0.2s; }
         .nav-btn.active { background: #FFFFFF; color: var(--text-primary); box-shadow: 0 2px 4px rgba(0,0,0,0.08); font-weight: 600; }
 
-        /* VIEWPORT */
-        .viewport { flex: 1; padding: 24px; overflow: hidden; position: relative; }
-        .view-section { display: none; height: 100%; flex-direction: column; animation: slideUp 0.4s ease; }
+        /* BODY */
+        .viewport { flex: 1; padding: 24px; overflow-y: auto; position: relative; scroll-behavior: smooth; }
+        .view-section { display: none; flex-direction: column; animation: slideUp 0.4s ease; min-height: 100%; }
         .view-section.active { display: flex; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
         /* CARDS & TABLES */
-        .card { background: var(--card-bg); border-radius: 18px; box-shadow: var(--shadow-soft); overflow: hidden; border: 1px solid rgba(0,0,0,0.02); flex: 1; display: flex; flex-direction: column; }
-        
+        .card { background: var(--card-bg); border-radius: 18px; box-shadow: var(--shadow-soft); overflow: hidden; border: 1px solid rgba(0,0,0,0.02); margin-bottom: 24px; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        
-        /* HEADERS ORDENABLES */
-        th { 
-            text-align: left; padding: 18px 24px; color: var(--text-secondary); font-weight: 600; 
-            border-bottom: 1px solid #F2F2F7; background: #FAFAFC; cursor: pointer; user-select: none;
-            transition: background 0.2s;
-        }
+        th { text-align: left; padding: 18px 24px; color: var(--text-secondary); font-weight: 600; border-bottom: 1px solid #F2F2F7; background: #FAFAFC; cursor: pointer; user-select: none; }
         th:hover { background: #EAEAEA; color: var(--text-primary); }
         th::after { content: ' ⇅'; font-size: 10px; opacity: 0.3; margin-left: 5px; }
         th.asc::after { content: ' ▲'; opacity: 1; color: var(--text-primary); }
         th.desc::after { content: ' ▼'; opacity: 1; color: var(--text-primary); }
-
+        
         td { padding: 16px 24px; border-bottom: 1px solid #F2F2F7; transition: background 0.1s; }
         tr:hover td { background: #F5F5F7; cursor: pointer; }
-
-        .ticker { font-weight: 600; }
-        .category-tag { font-size: 11px; color: var(--text-secondary); background: #F2F2F7; padding: 2px 8px; border-radius: 4px; border: 1px solid #E5E5EA; }
-        .price { font-family: 'SF Mono', 'Monaco', monospace; letter-spacing: -0.5px; }
         
         .badge { padding: 4px 10px; border-radius: 20px; font-weight: 600; font-size: 11px; }
-        .badge.long { background: #E1F7E6; color: #15803d; }
-        .badge.short { background: #FEE2E2; color: #b91c1c; }
-
+        .long { background: #E1F7E6; color: #15803d; }
+        .short { background: #FEE2E2; color: #b91c1c; }
+        .neutral { background: #E5E5EA; color: #666; }
+        
+        .ticker { font-weight: 600; }
+        .category-tag { font-size: 11px; color: var(--text-secondary); background: #F2F2F7; padding: 2px 8px; border-radius: 4px; border: 1px solid #E5E5EA; }
+        .time-tag { background: #E8F2FF; color: #0071e3; border: 1px solid #c2e0ff; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; }
+        
         .btn-action { background: var(--text-primary); color: white; border: none; padding: 10px 20px; border-radius: 12px; font-weight: 500; cursor: pointer; }
 
-        /* SWITCH */
+        /* SWITCH AUTO */
         .switch-container { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 500; color: var(--text-secondary); }
         .toggle { position: relative; display: inline-block; width: 44px; height: 24px; }
         .toggle input { opacity: 0; width: 0; height: 0; }
@@ -90,12 +60,18 @@
         input:checked + .slider { background-color: var(--accent-green); }
         input:checked + .slider:before { transform: translateX(20px); }
 
-        /* HUD & PORTFOLIO */
+        /* BITÁCORA */
+        .history-title { font-size: 16px; font-weight: 600; margin: 30px 0 15px 0; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 10px; }
+        .history-title::after { content: ''; flex: 1; height: 1px; background: #D2D2D7; }
+        
+        /* HUD FLOTANTE */
         .chart-hud { position: absolute; top: 20px; left: 20px; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(15px); padding: 16px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.5); z-index: 10; width: 200px; display: none; }
         .hud-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; }
         .hud-val { font-weight: 600; }
-        
-        .ai-bubble { background: #F2F2F7; padding: 8px 12px; border-radius: 8px; font-size: 12px; max-width: 250px; }
+
+        /* NOTIFICACIÓN */
+        .notification-banner { position: fixed; top: 20px; right: 20px; background: white; padding: 15px 20px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); z-index: 200; display: none; border-left: 5px solid var(--accent-green); animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
     </style>
 </head>
 <body>
@@ -103,7 +79,7 @@
     <header>
         <div class="brand">DRL TRADER</div>
         <nav class="nav-island">
-            <button class="nav-btn active" onclick="switchView('radar')">Radar</button>
+            <button class="nav-btn active" onclick="switchView('radar')">Dashboard</button>
             <button class="nav-btn" onclick="switchView('charts')">Gráficos</button>
             <button class="nav-btn" onclick="switchView('portfolio')">Portfolio</button>
             <button class="nav-btn" onclick="switchView('journal')">Diario</button>
@@ -120,97 +96,108 @@
     <div class="viewport">
 
         <div id="radar" class="view-section active">
+            
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <div>
-                    <h2 style="margin: 0; font-size: 24px; letter-spacing: -0.5px;">Dashboard</h2>
-                    <span style="font-size: 13px; color: var(--text-secondary);">Click en los títulos para ordenar</span>
+                    <h2 style="margin: 0; font-size: 24px; letter-spacing: -0.5px;">Oportunidades Vigentes</h2>
+                    <span style="font-size: 13px; color: var(--text-secondary);">Escáner IA Cloud | Ordenable</span>
                 </div>
-                <button class="btn-action" onclick="scanMarket()">Escanear Mercado</button>
+                <button class="btn-action" onclick="scanMarket()">Refrescar</button>
             </div>
 
             <div class="card">
-                <div style="overflow-y: auto; flex: 1;">
-                    <table id="radarTable">
-                        <thead>
-                            <tr>
-                                <th onclick="sortTable('ticker')">ACTIVO</th>
-                                <th onclick="sortTable('category')">CATEGORÍA</th> <th onclick="sortTable('signal')">SEÑAL</th>
-                                <th onclick="sortTable('price')">PRECIO</th>
-                                <th onclick="sortTable('sl')">STOP LOSS</th>
-                                <th onclick="sortTable('tp')">TAKE PROFIT</th>
-                                <th onclick="sortTable('win_rate')">WIN RATE</th>
-                                <th onclick="sortTable('edge')">EDGE</th>
-                            </tr>
-                        </thead>
-                        <tbody id="radar-body">
-                            <tr><td colspan="8" style="text-align:center; padding:50px; color:var(--text-secondary);">Esperando escaneo...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
+                <table id="radarTable">
+                    <thead>
+                        <tr>
+                            <th onclick="sortTable('ticker')">ACTIVO</th>
+                            <th onclick="sortTable('category')">CATEGORÍA</th>
+                            <th onclick="sortTable('signal')">SEÑAL</th>
+                            <th onclick="sortTable('est_time')">TIEMPO EST.</th>
+                            <th onclick="sortTable('price')">PRECIO</th>
+                            <th onclick="sortTable('tp')">OBJETIVO</th>
+                            <th onclick="sortTable('edge')">EDGE</th>
+                        </tr>
+                    </thead>
+                    <tbody id="radar-body">
+                        <tr><td colspan="7" style="text-align:center; padding:50px; color:var(--text-secondary);">Cargando datos del cerebro...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="history-title">Bitácora de Señales (Historial)</div>
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>FECHA</th><th>ACTIVO</th><th>SEÑAL ORIGINAL</th><th>ENTRADA</th><th>ESTADO</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-body">
+                        <tr><td colspan="5" style="text-align:center; padding:20px; font-size:12px;">Cargando historial...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
         <div id="charts" class="view-section">
-            <div class="card" style="position: relative;">
+            <div class="card" style="position: relative; height: 100%;">
                 <div id="chart-hud" class="chart-hud">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                        <span style="font-weight:700; font-size:16px;" id="hud-ticker">AAPL</span>
-                        <span class="badge long" id="hud-signal">LONG</span>
+                        <span style="font-weight:700;" id="hud-ticker">--</span>
+                        <span class="badge long" id="hud-signal">--</span>
                     </div>
-                    <div class="hud-row"><span>Entrada</span> <span class="hud-val" id="hud-entry">$0.00</span></div>
-                    <div class="hud-row"><span>Stop Loss</span> <span class="hud-val" style="color:var(--accent-red)" id="hud-sl">$0.00</span></div>
-                    <div class="hud-row"><span>Take Profit</span> <span class="hud-val" style="color:var(--accent-green)" id="hud-tp">$0.00</span></div>
+                    <div class="hud-row"><span>Entrada</span> <span class="hud-val" id="hud-entry">--</span></div>
+                    <div class="hud-row"><span>Objetivo</span> <span class="hud-val" style="color:var(--accent-green)" id="hud-tp">--</span></div>
+                    <div class="hud-row"><span>Stop</span> <span class="hud-val" style="color:var(--accent-red)" id="hud-sl">--</span></div>
+                    <div style="font-size:11px; margin-top:8px; color:var(--text-secondary); border-top:1px solid #ddd; padding-top:5px;" id="hud-time">--</div>
                 </div>
                 <div id="tv-container" style="width: 100%; height: 100%;"></div>
             </div>
         </div>
 
         <div id="portfolio" class="view-section">
-            <h2 style="margin: 0 0 20px 0; font-size: 24px;">Posiciones Abiertas</h2>
-            <div class="card">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>TICKER</th><th>LADO</th><th>ENTRADA</th><th>ACTUAL</th><th>PNL</th><th>ANÁLISIS IA</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td class="ticker">GGAL.BA</td>
-                            <td><span class="badge long">LONG</span></td>
-                            <td class="price">$2,450.00</td>
-                            <td class="price">$2,610.00</td>
-                            <td style="color:var(--accent-green); font-weight:600;">+6.53%</td>
-                            <td><div class="ai-bubble">📈 Tendencia fuerte. Mantener.</div></td>
-                        </tr>
-                    </tbody>
-                </table>
+            <h2 style="font-size: 24px;">Portfolio</h2>
+            <div class="card" style="padding:40px; text-align:center; color:var(--text-secondary);">
+                Conexión a Broker en desarrollo...
             </div>
         </div>
-        
         <div id="journal" class="view-section">
-            <h2 style="margin: 0 0 20px 0; font-size: 24px;">Rendimiento</h2>
+            <h2 style="font-size: 24px;">Diario</h2>
             <div class="card" style="padding:40px; text-align:center; color:var(--text-secondary);">
-                (Aquí irán tus métricas de base de datos)
+                Métricas de PnL en desarrollo...
             </div>
         </div>
 
     </div>
 
+    <div id="notif-banner" class="notification-banner">
+        <div style="font-weight:700; margin-bottom:4px;">🚀 Nueva Oportunidad</div>
+        <div id="notif-text" style="font-size:13px; color:#555;">--</div>
+    </div>
+
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
     <script>
-        const API_URL = "http://127.0.0.1:8000";
+        // CONFIGURACIÓN API (¡CAMBIAR POR URL DE RENDER AL SUBIR!)
+        const API_URL = "https://skiboss.onrender.com"; 
+        
         let autoScanInterval = null;
-        let marketData = []; // Memoria para ordenar sin volver a pedir
-        let sortDir = {}; // Estado del ordenamiento por columna
+        let marketData = [];
+        let sortDir = {};
+
+        // INICIO
+        window.onload = function() {
+            if (Notification.permission !== "granted") Notification.requestPermission();
+            scanMarket(); // Carga inicial
+            loadTradingView("NASDAQ:AAPL");
+        };
 
         function switchView(viewId) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
-            const tabs = ['radar', 'charts', 'portfolio', 'journal'];
-            document.querySelectorAll('.nav-btn')[tabs.indexOf(viewId)].classList.add('active');
-            if (viewId === 'charts' && !window.tvWidget) loadTradingView("NASDAQ:AAPL");
+            const map = ['radar', 'charts', 'portfolio', 'journal'];
+            document.querySelectorAll('.nav-btn')[map.indexOf(viewId)].classList.add('active');
+            if(viewId === 'charts' && !window.tvWidget) loadTradingView("NASDAQ:AAPL");
         }
 
         function toggleAutoScan() {
@@ -223,25 +210,49 @@
         }
 
         async function scanMarket() {
-            const tbody = document.getElementById('radar-body');
-            if(tbody.rows.length < 2) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:50px; color:var(--text-secondary);">Analizando...</td></tr>';
-
+            // El backend ya escanea solo, esto solo trae los datos
             try {
                 const res = await fetch(`${API_URL}/radar`);
                 const data = await res.json();
-                marketData = data; // Guardamos en memoria
-                renderTable(marketData);
-            } catch (e) {
-                console.error(e);
-            }
+                marketData = data;
+                renderTable(data);
+                loadHistory();
+
+                // Notificación visual si hay data y está activo
+                if (data.length > 0 && document.getElementById('autoToggle').checked) {
+                    const top = data[0];
+                    showNotification(`Señal: ${top.ticker}`, `Edge: ${top.edge}% | ${top.est_time}`);
+                }
+            } catch (e) { console.error("Error conectando API:", e); }
+        }
+
+        async function loadHistory() {
+            try {
+                const res = await fetch(`${API_URL}/history`);
+                const data = await res.json();
+                const tbody = document.getElementById('history-body');
+                tbody.innerHTML = '';
+                if(data.length === 0) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">Sin historial.</td></tr>';
+                
+                data.forEach(item => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td style="color:#888;">${item.date}</td>
+                            <td class="ticker">${item.ticker}</td>
+                            <td><span class="badge ${item.signal === 'LONG' ? 'long' : 'short'}">${item.signal}</span></td>
+                            <td>$${item.price}</td>
+                            <td><span class="badge neutral">${item.status}</span></td>
+                        </tr>
+                    `;
+                });
+            } catch (e) {}
         }
 
         function renderTable(data) {
             const tbody = document.getElementById('radar-body');
             tbody.innerHTML = '';
-            
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:50px;">Sin oportunidades.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:50px;">Escaneando... (Si esto persiste, el mercado puede estar cerrado o sin señales).</td></tr>';
                 return;
             }
 
@@ -252,12 +263,12 @@
 
                 row.innerHTML = `
                     <td class="ticker">${item.ticker}</td>
-                    <td><span class="category-tag">${item.category}</span></td> <td><span class="${badgeClass}">${item.signal}</span></td>
-                    <td class="price">$${item.price}</td>
-                    <td class="price" style="color:var(--accent-red)">$${item.sl}</td>
-                    <td class="price" style="color:var(--accent-green)">$${item.tp}</td>
-                    <td>${item.win_rate}%</td>
-                    <td style="color:${edgeColor}; font-weight:700;">${item.edge > 0 ? '+' : ''}${item.edge}%</td>
+                    <td><span class="category-tag">${item.category}</span></td>
+                    <td><span class="${badgeClass}">${item.signal}</span></td>
+                    <td><span class="time-tag">${item.est_time}</span></td>
+                    <td>$${item.price}</td>
+                    <td style="color:var(--accent-green); font-weight:600;">$${item.tp}</td>
+                    <td style="color:${edgeColor}; font-weight:700;">${item.edge}%</td>
                 `;
                 
                 row.onclick = () => {
@@ -269,41 +280,44 @@
             });
         }
 
-        function sortTable(key) {
-            // Alternar dirección
-            sortDir[key] = !sortDir[key]; // true = asc, false = desc
+        function showNotification(title, body) {
+            const banner = document.getElementById('notif-banner');
+            document.getElementById('notif-text').innerText = `${title} - ${body}`;
+            banner.style.display = 'block';
+            setTimeout(() => banner.style.display = 'none', 5000);
             
-            // Actualizar flechas visuales
-            document.querySelectorAll('th').forEach(th => th.className = '');
-            const thIndex = ['ticker', 'category', 'signal', 'price', 'sl', 'tp', 'win_rate', 'edge'].indexOf(key);
-            document.querySelectorAll('th')[thIndex].className = sortDir[key] ? 'asc' : 'desc';
+            if (Notification.permission === "granted") {
+                new Notification("DRL Trader", { body: `${title} - ${body}` });
+            }
+        }
 
-            // Ordenar datos
+        function sortTable(key) {
+            sortDir[key] = !sortDir[key];
             marketData.sort((a, b) => {
-                let valA = a[key];
-                let valB = b[key];
-
-                // Manejo de strings vs números
+                let valA = a[key]; let valB = b[key];
                 if (typeof valA === 'string') valA = valA.toLowerCase();
                 if (typeof valB === 'string') valB = valB.toLowerCase();
-
                 if (valA < valB) return sortDir[key] ? -1 : 1;
                 if (valA > valB) return sortDir[key] ? 1 : -1;
                 return 0;
             });
-
             renderTable(marketData);
+            
+            // UI Flechas
+            document.querySelectorAll('th').forEach(th => th.className = '');
+            const idx = ['ticker', 'category', 'signal', 'est_time', 'price', 'tp', 'edge'].indexOf(key);
+            document.querySelectorAll('th')[idx].className = sortDir[key] ? 'asc' : 'desc';
         }
 
         function updateHUD(item) {
             document.getElementById('chart-hud').style.display = 'block';
             document.getElementById('hud-ticker').innerText = item.ticker;
-            const badge = document.getElementById('hud-signal');
-            badge.innerText = item.signal;
-            badge.className = item.signal === 'LONG' ? 'badge long' : 'badge short';
+            document.getElementById('hud-signal').innerText = item.signal;
+            document.getElementById('hud-signal').className = item.signal === 'LONG' ? 'badge long' : 'badge short';
             document.getElementById('hud-entry').innerText = `$${item.price}`;
-            document.getElementById('hud-sl').innerText = `$${item.sl}`;
             document.getElementById('hud-tp').innerText = `$${item.tp}`;
+            document.getElementById('hud-sl').innerText = `$${item.sl}`;
+            document.getElementById('hud-time').innerText = `Tiempo: ${item.est_time}`;
         }
 
         function loadTradingView(symbol) {
@@ -317,7 +331,10 @@
                 "width": "100%", "height": "100%", "symbol": tvSymbol,
                 "interval": "D", "timezone": "Etc/UTC", "theme": "light",
                 "style": "1", "locale": "es", "toolbar_bg": "#f1f3f6",
-                "enable_publishing": false, "container_id": "tv-container"
+                "enable_publishing": false, 
+                "allow_symbol_change": true, // ¡DESBLOQUEADO!
+                "container_id": "tv-container",
+                "hide_side_toolbar": false
             });
             window.tvWidget = true;
         }
