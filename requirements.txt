@@ -1,22 +1,11 @@
-# --- CORE DEL SERVIDOR ---
 fastapi==0.109.0
 uvicorn==0.27.0
-python-dotenv==1.0.1
 pydantic==2.6.0
-httpx==0.26.0
-
-# --- MANEJO DE DATOS ---
-pandas==2.2.0
-numpy==1.26.3
-
-# --- INTELIGENCIA ARTIFICIAL (OPTIMIZADA PARA NUBE) ---
-# Usamos la versión CPU explícita para evitar crasheos por "Out of Memory" en Render.
-# Esto garantiza que la app suba y funcione rápido.
-torch==2.1.2 --index-url https://download.pytorch.org/whl/cpu
-stable-baselines3==2.3.2
-gymnasium==0.29.1
-shimmy>=0.2.1
-
-# --- FINANZAS Y TRADING ---
+pandas>=2.0.0
+numpy>=1.24.0
 yfinance>=0.2.36
-ta>=0.11.0
+torch>=2.1.0
+stable-baselines3>=2.2.0
+gymnasium>=0.29.0
+shimmy>=0.2.0
+httpx>=0.26.0
