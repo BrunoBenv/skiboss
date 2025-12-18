@@ -1,4 +1,4 @@
-# backend/main.py - DRL TRADER CLEAN (ADRs ONLY - NO ERRORS)
+# backend/main.py - DRL TRADER MASSIVE (PURE AI - CSV LIST)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
@@ -25,51 +25,199 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- 📧 CONFIGURACIÓN DE CORREO ---
-EMAIL_SENDER = "TU_EMAIL@gmail.com"          # <--- REVISA TU EMAIL
-EMAIL_PASSWORD = "xxxx xxxx xxxx xxxx"       # <--- REVISA TU CLAVE
-EMAIL_RECEIVER = EMAIL_SENDER
+# --- 📧 TUS DATOS (PONER AQUÍ) ---
+EMAIL_SENDER = "labfitperformance@gmail.com"
+EMAIL_PASSWORD = "Lamela55" 
+EMAIL_RECEIVER = "bruno.benvenuto5@gmail.com"
 
 # --- RUTAS ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "model_universe_v1.pth")
 METRICS_PATH = os.path.join(BASE_DIR, "smart_metrics.json")
+# Usamos /tmp para historial en la nube (Render)
 HISTORY_PATH = "/tmp/history_log.json" if os.path.exists("/tmp") else os.path.join(BASE_DIR, "history_log.json")
 
 model = None
 smart_metrics = {}
 cached_results = []
 
-# --- 🌎 UNIVERSO LIMPIO (SIN .BA PARA EVITAR ERRORES) ---
+# --- 🌎 TU UNIVERSO (175 ACTIVOS DEL CSV) ---
 SECTOR_MAP = {
-    # INDICES
-    "SPY": "S&P 500", "QQQ": "Nasdaq 100", "DIA": "Dow Jones", "IWM": "Russell 2000",
-    "TLT": "Bonos 20y", "VXX": "Volatilidad", "EEM": "Emergentes", "EWZ": "Brasil",
-
-    # CRIPTO
-    "BTC-USD": "Cripto", "ETH-USD": "Cripto", "SOL-USD": "Cripto", "BNB-USD": "Cripto",
-    "ADA-USD": "Cripto", "DOGE-USD": "Cripto", "AVAX-USD": "Cripto", "MATIC-USD": "Cripto",
-
-    # ARGENTINA (ADRS EN NY - ESTABLES)
-    "GGAL": "Arg Bancos", "BMA": "Arg Bancos", "YPF": "Arg Energía", "PAM": "Arg Energía",
-    "TGS": "Arg Energía", "CEPU": "Arg Energía", "CRESY": "Arg Real Estate", 
-    "LOMA": "Arg Cemento", "VIST": "Arg Vaca Muerta", "MELI": "Latam Tech", "GLOB": "Latam Tech",
-
-    # TECNOLOGÍA
-    "AAPL": "Big Tech", "MSFT": "Big Tech", "GOOGL": "Big Tech", "AMZN": "Big Tech",
-    "NVDA": "Big Tech", "META": "Big Tech", "TSLA": "Big Tech", "AMD": "Chips",
-    "INTC": "Chips", "NFLX": "Streaming", "CRM": "Software", "PLTR": "AI",
-    "COIN": "Crypto Exch", "HOOD": "Fintech", "SQ": "Fintech", "PYPL": "Fintech",
-
-    # CLÁSICOS
-    "JPM": "Bancos", "BAC": "Bancos", "C": "Bancos", "GS": "Bancos",
-    "XOM": "Petrolera", "CVX": "Petrolera", "KO": "Consumo", "PEP": "Consumo",
-    "MCD": "Consumo", "WMT": "Retail", "DIS": "Entretenimiento",
-    "BA": "Aviones", "F": "Autos", "GM": "Autos", "PFE": "Pharma", "JNJ": "Pharma",
-
-    # COMMODITIES
-    "GLD": "Oro", "SLV": "Plata", "USO": "Petróleo", "UNG": "Gas Natural",
-    "FCX": "Cobre", "AA": "Aluminio"
+    "SPY": "ETF",
+    "QQQ": "ETF",
+    "DIA": "ETF",
+    "IWM": "ETF",
+    "VTI": "ETF",
+    "VOO": "ETF",
+    "IVV": "ETF",
+    "XLK": "ETF",
+    "XLF": "ETF",
+    "XLV": "ETF",
+    "XLE": "ETF",
+    "XLI": "ETF",
+    "XLP": "ETF",
+    "XLY": "ETF",
+    "XLU": "ETF",
+    "XLRE": "ETF",
+    "XLB": "ETF",
+    "ARKK": "ETF",
+    "SMH": "ETF",
+    "SOXX": "ETF",
+    "IBB": "ETF",
+    "XBI": "ETF",
+    "HACK": "ETF",
+    "KWEB": "ETF",
+    "EEM": "ETF",
+    "EWZ": "ETF",
+    "RSX": "ETF",
+    "TLT": "ETF",
+    "IEF": "ETF",
+    "SHY": "BondETF",
+    "HYG": "BondETF",
+    "LQD": "BondETF",
+    "GLD": "CommodityETF",
+    "SLV": "CommodityETF",
+    "USO": "CommodityETF",
+    "UNG": "CommodityETF",
+    "BITO": "ETF",
+    "XBTF": "ETF",
+    "BTC-USD": "Crypto",
+    "ETH-USD": "Crypto",
+    "ES=F": "Future",
+    "NQ=F": "Future",
+    "YM=F": "Future",
+    "RTY=F": "Future",
+    "CL=F": "Future",
+    "GC=F": "Future",
+    "SI=F": "Future",
+    "NG=F": "Future",
+    "ZB=F": "Future",
+    "ZN=F": "Future",
+    "ZF=F": "Future",
+    "6E=F": "Future",
+    "6B=F": "Future",
+    "DX-Y.NYB": "Index",
+    "^GSPC": "Index",
+    "^NDX": "Index",
+    "^DJI": "Index",
+    "^RUT": "Index",
+    "^VIX": "Index",
+    "^GDAXI": "Index",
+    "AAPL": "Stock",
+    "MSFT": "Stock",
+    "GOOGL": "Stock",
+    "AMZN": "Stock",
+    "META": "Stock",
+    "NVDA": "Stock",
+    "TSLA": "Stock",
+    "NFLX": "Stock",
+    "AMD": "Stock",
+    "INTC": "Stock",
+    "IBM": "Stock",
+    "CRM": "Stock",
+    "ORCL": "Stock",
+    "ADBE": "Stock",
+    "PYPL": "Stock",
+    "SQ": "Stock",
+    "SHOP": "Stock",
+    "AVGO": "Stock",
+    "TSM": "Stock",
+    "ASML": "Stock",
+    "BABA": "Stock",
+    "GE": "Stock",
+    "BA": "Stock",
+    "CAT": "Stock",
+    "DE": "Stock",
+    "MMM": "Stock",
+    "NKE": "Stock",
+    "SBUX": "Stock",
+    "KO": "Stock",
+    "PEP": "Stock",
+    "MCD": "Stock",
+    "WMT": "Stock",
+    "COST": "Stock",
+    "PG": "Stock",
+    "JNJ": "Stock",
+    "PFE": "Stock",
+    "UNH": "Stock",
+    "ABBV": "Stock",
+    "LLY": "Stock",
+    "XOM": "Stock",
+    "CVX": "Stock",
+    "COP": "Stock",
+    "BP": "Stock",
+    "TTE": "Stock",
+    "JPM": "Stock",
+    "GS": "Stock",
+    "MS": "Stock",
+    "BAC": "Stock",
+    "WFC": "Stock",
+    "C": "Stock",
+    "BLK": "Stock",
+    "V": "Stock",
+    "MA": "Stock",
+    "AXP": "Stock",
+    "BRK-B": "Stock",
+    "DIS": "Stock",
+    "CMCSA": "Stock",
+    "T": "Stock",
+    "VZ": "Stock",
+    "TMUS": "Stock",
+    "LOW": "Stock",
+    "HD": "Stock",
+    "UPS": "Stock",
+    "FDX": "Stock",
+    "TSCO": "Stock",
+    "PLTR": "Stock",
+    "SNOW": "Stock",
+    "NET": "Stock",
+    "CRWD": "Stock",
+    "ZS": "Stock",
+    "OKTA": "Stock",
+    "PANW": "Stock",
+    "CEPU.BA": "ArgentinaStock",
+    "YPFD.BA": "ArgentinaStock",
+    "GGAL.BA": "ArgentinaStock",
+    "BMA.BA": "ArgentinaStock",
+    "PAMP.BA": "ArgentinaStock",
+    "TGSU2.BA": "ArgentinaStock",
+    "TRAN.BA": "ArgentinaStock",
+    "EDN.BA": "ArgentinaStock",
+    "MIRG.BA": "ArgentinaStock",
+    "CRES.BA": "ArgentinaStock",
+    "ALUA.BA": "ArgentinaStock",
+    "TXAR.BA": "ArgentinaStock",
+    "VALE.BA": "ArgentinaStock",
+    "LOMA.BA": "ArgentinaStock",
+    "TGNO4.BA": "ArgentinaStock",
+    "SUPV.BA": "ArgentinaStock",
+    "BYMA.BA": "ArgentinaStock",
+    "COME.BA": "ArgentinaStock",
+    "IRSA.BA": "ArgentinaStock",
+    "AGRO.BA": "ArgentinaStock",
+    "CADO.BA": "ArgentinaStock",
+    "SEMI.BA": "ArgentinaStock",
+    "MORI.BA": "ArgentinaStock",
+    "LEDE.BA": "ArgentinaStock",
+    "BBAR.BA": "ArgentinaStock",
+    "CTIO.BA": "ArgentinaStock",
+    "DGCU2.BA": "ArgentinaStock",
+    "AL30": "BondArgentina",
+    "AL29": "BondArgentina",
+    "AL35": "BondArgentina",
+    "AL41": "BondArgentina",
+    "GD29": "BondArgentina",
+    "GD30": "BondArgentina",
+    "GD35": "BondArgentina",
+    "GD38": "BondArgentina",
+    "GD41": "BondArgentina",
+    "GD46": "BondArgentina",
+    "BONCER": "BonosCER",
+    "T2X4": "BonosCER",
+    "TV24": "BonosCER",
+    "DICP": "BonosCER",
+    "PARA": "BondArgentina",
+    "PARP": "BondArgentina",
 }
 
 # --- FUNCIONES ---
@@ -78,9 +226,9 @@ def send_email_alert(data):
     try:
         subject = f"🚀 DRL SIGNAL: {data['ticker']} ({data['signal']})"
         body = f"""
-        ALERTA DRL TRADER
+        ALERTA DRL TRADER (PURE AI)
         ---------------------------
-        ACTIVO:   {data['ticker']}
+        ACTIVO:   {data['ticker']} ({data['category']})
         SEÑAL:    {data['signal']}
         PRECIO:   ${data['price']}
         OBJETIVO: ${data['tp']}
@@ -109,11 +257,13 @@ def get_time_estimate(price, tp, atr):
 
 def analyze_ticker(ticker):
     try:
+        # Descarga rápida
         df = yf.download(ticker, period="3mo", interval="1d", progress=False, auto_adjust=True)
         if isinstance(df.columns, pd.MultiIndex): df.columns = df.columns.get_level_values(0)
         if len(df) < 50: return None
         df.columns = [c.lower() for c in df.columns]
         
+        # Features
         df['log_ret'] = np.log(df['close'] / df['close'].shift(1)).fillna(0)
         df['vol_20'] = df['log_ret'].rolling(20).std()
         df['vol_60'] = df['log_ret'].rolling(60).std()
@@ -130,6 +280,7 @@ def analyze_ticker(ticker):
         df['rsi'] = 100 - (100 / (1 + rs))
         df['rsi_norm'] = (df['rsi'] - 50) / 50 
         
+        # PREDICCIÓN PURE AI
         obs = df.iloc[-1][['log_ret', 'vol_regime', 'dist_sma50', 'dist_sma200', 'vol_rel', 'rsi_norm']].values.astype(np.float32)
         action, _ = model.predict(obs, deterministic=True)
         
@@ -189,7 +340,7 @@ def save_and_notify(signal_data):
 async def background_scanner():
     global cached_results
     watchlist = list(SECTOR_MAP.keys())
-    print(f"🤖 ESCÁNER INICIADO: {len(watchlist)} ACTIVOS (CLEAN LIST)")
+    print(f"🤖 ESCÁNER PURO INICIADO: {len(watchlist)} ACTIVOS (CSV LIST)")
     
     while True:
         try:
@@ -198,7 +349,7 @@ async def background_scanner():
             for t in watchlist:
                 res = analyze_ticker(t)
                 if res: temp_results.append(res)
-                await asyncio.sleep(0.2) # Pausa rápida
+                await asyncio.sleep(0.5)
             cached_results = temp_results
         except Exception as e: print(f"⚠️ Error loop: {e}")
         await asyncio.sleep(600)
@@ -224,9 +375,12 @@ def get_radar(): return cached_results
 
 @app.get("/history")
 def get_history():
+    # Fix para el error 404: asegurar que devuelva una lista vacía si falla
     if os.path.exists(HISTORY_PATH):
-        with open(HISTORY_PATH, 'r') as f: return json.load(f)
+        try:
+            with open(HISTORY_PATH, 'r') as f: return json.load(f)
+        except: return []
     return []
 
 @app.get("/")
-def home(): return {"status": "DRL Trader Clean Online"}
+def home(): return {"status": "DRL Trader Pure AI Online"}
