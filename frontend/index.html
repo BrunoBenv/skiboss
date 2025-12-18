@@ -15,43 +15,25 @@
         }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg-app); color: var(--text-primary); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* HEADER */
         header { height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; background: var(--glass-header); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0,0,0,0.05); z-index: 100; flex-shrink: 0; }
         .brand { font-size: 20px; font-weight: 700; color: var(--text-primary); }
         .nav-island { background: #E8E8ED; padding: 4px; border-radius: 10px; display: flex; gap: 2px; }
         .nav-btn { background: transparent; border: none; color: var(--text-secondary); padding: 8px 24px; font-size: 13px; font-weight: 500; border-radius: 7px; cursor: pointer; transition: 0.2s; }
         .nav-btn.active { background: #FFFFFF; color: var(--text-primary); box-shadow: 0 2px 4px rgba(0,0,0,0.08); font-weight: 600; }
 
-        /* BODY */
         .viewport { flex: 1; padding: 24px; overflow-y: auto; position: relative; scroll-behavior: smooth; }
         .view-section { display: none; flex-direction: column; animation: slideUp 0.4s ease; min-height: 100%; }
         .view-section.active { display: flex; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* CARDS & TABLES */
         .card { background: var(--card-bg); border-radius: 18px; box-shadow: var(--shadow-soft); overflow: hidden; border: 1px solid rgba(0,0,0,0.02); margin-bottom: 24px; }
         
-        /* --- SOLUCIÓN MATEMÁTICA PARA EL GRÁFICO --- */
-        #charts .card {
-            /* Calcula: 100% de la pantalla - Header(64px) - Paddings(48px) - Margen extra */
-            height: calc(100vh - 140px) !important; 
-            margin-bottom: 0;
-            display: flex;       /* Asegura que el contenido interno se expanda */
-            flex-direction: column;
-        }
-        #tv-container {
-            flex: 1;             /* Ocupa todo el espacio disponible en la tarjeta */
-            width: 100%;
-            height: 100%;
-        }
-        /* ------------------------------------------- */
+        #charts .card { height: calc(100vh - 140px) !important; margin-bottom: 0; display: flex; flex-direction: column; }
+        #tv-container { flex: 1; width: 100%; height: 100%; }
 
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
         th { text-align: left; padding: 18px 24px; color: var(--text-secondary); font-weight: 600; border-bottom: 1px solid #F2F2F7; background: #FAFAFC; cursor: pointer; user-select: none; }
         th:hover { background: #EAEAEA; color: var(--text-primary); }
-        th::after { content: ' ⇅'; font-size: 10px; opacity: 0.3; margin-left: 5px; }
-        th.asc::after { content: ' ▲'; opacity: 1; color: var(--text-primary); }
-        th.desc::after { content: ' ▼'; opacity: 1; color: var(--text-primary); }
         
         td { padding: 16px 24px; border-bottom: 1px solid #F2F2F7; transition: background 0.1s; }
         tr:hover td { background: #F5F5F7; cursor: pointer; }
@@ -67,7 +49,6 @@
         
         .btn-action { background: var(--text-primary); color: white; border: none; padding: 10px 20px; border-radius: 12px; font-weight: 500; cursor: pointer; }
 
-        /* SWITCH AUTO */
         .switch-container { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 500; color: var(--text-secondary); }
         .toggle { position: relative; display: inline-block; width: 44px; height: 24px; }
         .toggle input { opacity: 0; width: 0; height: 0; }
@@ -76,16 +57,10 @@
         input:checked + .slider { background-color: var(--accent-green); }
         input:checked + .slider:before { transform: translateX(20px); }
 
-        /* BITÁCORA */
-        .history-title { font-size: 16px; font-weight: 600; margin: 30px 0 15px 0; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 10px; }
-        .history-title::after { content: ''; flex: 1; height: 1px; background: #D2D2D7; }
-        
-        /* HUD FLOTANTE */
         .chart-hud { position: absolute; top: 20px; left: 20px; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(15px); padding: 16px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.5); z-index: 10; width: 200px; display: none; }
         .hud-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; }
         .hud-val { font-weight: 600; }
 
-        /* NOTIFICACIÓN */
         .notification-banner { position: fixed; top: 20px; right: 20px; background: white; padding: 15px 20px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); z-index: 200; display: none; border-left: 5px solid var(--accent-green); animation: slideIn 0.3s ease; }
         @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
     </style>
@@ -112,15 +87,13 @@
     <div class="viewport">
 
         <div id="radar" class="view-section active">
-            
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <div>
                     <h2 style="margin: 0; font-size: 24px; letter-spacing: -0.5px;">Oportunidades Vigentes</h2>
-                    <span style="font-size: 13px; color: var(--text-secondary);">Escáner IA Cloud | Ordenable</span>
+                    <span style="font-size: 13px; color: var(--text-secondary);">Escáner IA Cloud | 175 Activos</span>
                 </div>
                 <button class="btn-action" onclick="scanMarket()">Refrescar</button>
             </div>
-
             <div class="card">
                 <table id="radarTable">
                     <thead>
@@ -139,14 +112,11 @@
                     </tbody>
                 </table>
             </div>
-
-            <div class="history-title">Bitácora de Señales (Historial)</div>
+            <div style="font-size: 16px; font-weight: 600; margin: 30px 0 15px 0; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #D2D2D7; padding-bottom: 5px;">Bitácora de Señales (Historial)</div>
             <div class="card">
                 <table>
                     <thead>
-                        <tr>
-                            <th>FECHA</th><th>ACTIVO</th><th>SEÑAL ORIGINAL</th><th>ENTRADA</th><th>ESTADO</th>
-                        </tr>
+                        <tr><th>FECHA</th><th>ACTIVO</th><th>SEÑAL ORIGINAL</th><th>ENTRADA</th><th>ESTADO</th></tr>
                     </thead>
                     <tbody id="history-body">
                         <tr><td colspan="5" style="text-align:center; padding:20px; font-size:12px;">Cargando historial...</td></tr>
@@ -173,15 +143,11 @@
 
         <div id="portfolio" class="view-section">
             <h2 style="font-size: 24px;">Portfolio</h2>
-            <div class="card" style="padding:40px; text-align:center; color:var(--text-secondary);">
-                Conexión a Broker en desarrollo...
-            </div>
+            <div class="card" style="padding:40px; text-align:center; color:var(--text-secondary);">Conexión a Broker en desarrollo...</div>
         </div>
         <div id="journal" class="view-section">
             <h2 style="font-size: 24px;">Diario</h2>
-            <div class="card" style="padding:40px; text-align:center; color:var(--text-secondary);">
-                Métricas de PnL en desarrollo...
-            </div>
+            <div class="card" style="padding:40px; text-align:center; color:var(--text-secondary);">Métricas de PnL en desarrollo...</div>
         </div>
 
     </div>
@@ -193,17 +159,16 @@
 
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
     <script>
-        // CONFIGURACIÓN API (¡CAMBIAR POR URL DE RENDER AL SUBIR!)
+        // CONFIGURACIÓN API (¡CAMBIAR POR TU URL DE RENDER!)
         const API_URL = "https://skiboss.onrender.com"; 
         
         let autoScanInterval = null;
         let marketData = [];
         let sortDir = {};
 
-        // INICIO
         window.onload = function() {
             if (Notification.permission !== "granted") Notification.requestPermission();
-            scanMarket(); // Carga inicial
+            scanMarket(); 
             loadTradingView("NASDAQ:AAPL");
         };
 
@@ -234,8 +199,8 @@
                 loadHistory();
 
                 if (data.length > 0 && document.getElementById('autoToggle').checked) {
-                    const top = data[0];
-                    showNotification(`Señal: ${top.ticker}`, `Edge: ${top.edge}% | ${top.est_time}`);
+                    const top = data.find(x => x.signal !== "NEUTRAL");
+                    if (top) showNotification(`Señal: ${top.ticker}`, `Edge: ${top.edge}% | ${top.est_time}`);
                 }
             } catch (e) { console.error("Error conectando API:", e); }
         }
@@ -247,17 +212,8 @@
                 const tbody = document.getElementById('history-body');
                 tbody.innerHTML = '';
                 if(data.length === 0) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">Sin historial.</td></tr>';
-                
                 data.forEach(item => {
-                    tbody.innerHTML += `
-                        <tr>
-                            <td style="color:#888;">${item.date}</td>
-                            <td class="ticker">${item.ticker}</td>
-                            <td><span class="badge ${item.signal === 'LONG' ? 'long' : 'short'}">${item.signal}</span></td>
-                            <td>$${item.price}</td>
-                            <td><span class="badge neutral">${item.status}</span></td>
-                        </tr>
-                    `;
+                    tbody.innerHTML += `<tr><td style="color:#888;">${item.date}</td><td class="ticker">${item.ticker}</td><td><span class="badge ${item.signal === 'LONG' ? 'long' : 'short'}">${item.signal}</span></td><td>$${item.price}</td><td><span class="badge neutral">${item.status}</span></td></tr>`;
                 });
             } catch (e) {}
         }
@@ -266,30 +222,15 @@
             const tbody = document.getElementById('radar-body');
             tbody.innerHTML = '';
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:50px;">Escaneando... (Si esto persiste, el mercado puede estar cerrado o sin señales).</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:50px;">Escaneando... (El mercado puede estar cerrado o cargando).</td></tr>';
                 return;
             }
-
             data.forEach(item => {
                 const row = document.createElement('tr');
-                const badgeClass = item.signal === 'LONG' ? 'badge long' : 'badge short';
+                const badgeClass = item.signal === 'LONG' ? 'badge long' : (item.signal === 'SHORT' ? 'badge short' : 'badge neutral');
                 const edgeColor = item.edge > 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-
-                row.innerHTML = `
-                    <td class="ticker">${item.ticker}</td>
-                    <td><span class="category-tag">${item.category}</span></td>
-                    <td><span class="${badgeClass}">${item.signal}</span></td>
-                    <td><span class="time-tag">${item.est_time}</span></td>
-                    <td>$${item.price}</td>
-                    <td style="color:var(--accent-green); font-weight:600;">$${item.tp}</td>
-                    <td style="color:${edgeColor}; font-weight:700;">${item.edge}%</td>
-                `;
-                
-                row.onclick = () => {
-                    switchView('charts');
-                    loadTradingView(item.ticker);
-                    updateHUD(item);
-                };
+                row.innerHTML = `<td class="ticker">${item.ticker}</td><td><span class="category-tag">${item.category}</span></td><td><span class="${badgeClass}">${item.signal}</span></td><td><span class="time-tag">${item.est_time}</span></td><td>$${item.price}</td><td style="color:var(--accent-green); font-weight:600;">$${item.tp}</td><td style="color:${edgeColor}; font-weight:700;">${item.edge}%</td>`;
+                row.onclick = () => { switchView('charts'); loadTradingView(item.ticker); updateHUD(item); };
                 tbody.appendChild(row);
             });
         }
@@ -299,10 +240,7 @@
             document.getElementById('notif-text').innerText = `${title} - ${body}`;
             banner.style.display = 'block';
             setTimeout(() => banner.style.display = 'none', 5000);
-            
-            if (Notification.permission === "granted") {
-                new Notification("DRL Trader", { body: `${title} - ${body}` });
-            }
+            if (Notification.permission === "granted") new Notification("DRL Trader", { body: `${title} - ${body}` });
         }
 
         function sortTable(key) {
@@ -316,17 +254,13 @@
                 return 0;
             });
             renderTable(marketData);
-            
-            document.querySelectorAll('th').forEach(th => th.className = '');
-            const idx = ['ticker', 'category', 'signal', 'est_time', 'price', 'tp', 'edge'].indexOf(key);
-            document.querySelectorAll('th')[idx].className = sortDir[key] ? 'asc' : 'desc';
         }
 
         function updateHUD(item) {
             document.getElementById('chart-hud').style.display = 'block';
             document.getElementById('hud-ticker').innerText = item.ticker;
             document.getElementById('hud-signal').innerText = item.signal;
-            document.getElementById('hud-signal').className = item.signal === 'LONG' ? 'badge long' : 'badge short';
+            document.getElementById('hud-signal').className = item.signal === 'LONG' ? 'badge long' : (item.signal === 'SHORT' ? 'badge short' : 'badge neutral');
             document.getElementById('hud-entry').innerText = `$${item.price}`;
             document.getElementById('hud-tp').innerText = `$${item.tp}`;
             document.getElementById('hud-sl').innerText = `$${item.sl}`;
@@ -337,17 +271,14 @@
             let tvSymbol = symbol;
             if(symbol.includes("-USD")) tvSymbol = "COINBASE:" + symbol.replace("-", "");
             if(symbol.includes(".BA")) tvSymbol = "BCBA:" + symbol.replace(".BA", "");
-            if(symbol === "SPY" || symbol === "QQQ") tvSymbol = "AMEX:" + symbol;
-
+            if(["SPY","QQQ","DIA","IWM"].includes(symbol)) tvSymbol = "AMEX:" + symbol;
+            
             document.getElementById('tv-container').innerHTML = ""; 
             new TradingView.widget({
                 "width": "100%", "height": "100%", "symbol": tvSymbol,
-                "interval": "D", "timezone": "Etc/UTC", "theme": "light",
-                "style": "1", "locale": "es", "toolbar_bg": "#f1f3f6",
-                "enable_publishing": false, 
-                "allow_symbol_change": true, 
-                "container_id": "tv-container",
-                "hide_side_toolbar": false
+                "interval": "D", "timezone": "Etc/UTC", "theme": "light", "style": "1",
+                "locale": "es", "toolbar_bg": "#f1f3f6", "enable_publishing": false, 
+                "allow_symbol_change": true, "container_id": "tv-container", "hide_side_toolbar": false
             });
             window.tvWidget = true;
         }
