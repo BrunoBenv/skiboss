@@ -26,9 +26,9 @@ app.add_middleware(
 )
 
 # --- 📧 TUS DATOS ---
-EMAIL_SENDER = "TU_EMAIL@gmail.com"          # <--- REVISA TU EMAIL
-EMAIL_PASSWORD = "xxxx xxxx xxxx xxxx"       # <--- REVISA TU CLAVE
-EMAIL_RECEIVER = EMAIL_SENDER
+EMAIL_SENDER = "labfitperformance@gmail.com"
+EMAIL_PASSWORD = "Lamela55" 
+EMAIL_RECEIVER = "bruno.benvenuto5@gmail.com"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "model_universe_v1.pth")
@@ -259,3 +259,4 @@ def get_history():
 
 @app.get("/")
 def home(): return {"status": "Online"}
+
