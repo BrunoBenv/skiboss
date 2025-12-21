@@ -1,4 +1,4 @@
-# backend/main.py - DRL TRADER ULTIMATE (FULL UNIVERSE + STEALTH + TEST SIGNAL)
+# backend/main.py - DRL TRADER (REAL-TIME STREAMING + CLEAN LIST)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
@@ -25,12 +25,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- 📧 TUS DATOS (EDITAR AQUÍ) ---
-EMAIL_SENDER = "TU_EMAIL@gmail.com"          # <--- PONER TU GMAIL
-EMAIL_PASSWORD = "xxxx xxxx xxxx xxxx"       # <--- PONER TU CLAVE DE APLICACIÓN
+# --- 📧 TUS DATOS ---
+EMAIL_SENDER = "TU_EMAIL@gmail.com"          # <--- REVISA TU EMAIL
+EMAIL_PASSWORD = "xxxx xxxx xxxx xxxx"       # <--- REVISA TU CLAVE
 EMAIL_RECEIVER = EMAIL_SENDER
 
-# --- RUTAS ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "model_universe_v1.pth")
 METRICS_PATH = os.path.join(BASE_DIR, "smart_metrics.json")
@@ -38,34 +37,35 @@ HISTORY_PATH = "/tmp/history_log.json" if os.path.exists("/tmp") else os.path.jo
 
 model = None
 smart_metrics = {}
-cached_results = []
 
-# --- 🌎 TU UNIVERSO COMPLETO (175 ACTIVOS DEL CSV) ---
+# --- INICIALIZAMOS CON SEÑAL DE CARGA PARA QUE NO SE VEA VACÍO ---
+cached_results = [{
+    "ticker": "SISTEMA-ONLINE",
+    "category": "Estado",
+    "signal": "ESPERANDO",
+    "price": 0, "sl": 0, "tp": 0,
+    "est_time": "Escaneando...",
+    "win_rate": 100, "edge": 0
+}]
+
+# --- 🌎 UNIVERSO LIMPIO (SIN XBTF NI BASURA) ---
 SECTOR_MAP = {
-    # ETFs USA
+    # ETFs
     "SPY": "ETF", "QQQ": "ETF", "DIA": "ETF", "IWM": "ETF", "VTI": "ETF",
     "VOO": "ETF", "IVV": "ETF", "XLK": "ETF", "XLF": "ETF", "XLV": "ETF",
     "XLE": "ETF", "XLI": "ETF", "XLP": "ETF", "XLY": "ETF", "XLU": "ETF",
     "XLRE": "ETF", "XLB": "ETF", "ARKK": "ETF", "SMH": "ETF", "SOXX": "ETF",
     "IBB": "ETF", "XBI": "ETF", "HACK": "ETF", "KWEB": "ETF", "EEM": "ETF",
     "EWZ": "ETF", "RSX": "ETF", "TLT": "ETF", "IEF": "ETF", "SHY": "BondETF",
-    "HYG": "BondETF", "LQD": "BondETF", "BITO": "ETF", "XBTF": "ETF",
+    "HYG": "BondETF", "LQD": "BondETF", "BITO": "ETF", 
     
     # COMMODITIES
     "GLD": "CommodityETF", "SLV": "CommodityETF", "USO": "CommodityETF", "UNG": "CommodityETF",
     
     # CRYPTO
-    "BTC-USD": "Crypto", "ETH-USD": "Crypto", 
-    
-    # FUTURES
-    "ES=F": "Future", "NQ=F": "Future", "YM=F": "Future", "RTY=F": "Future", 
-    "CL=F": "Future", "GC=F": "Future", "SI=F": "Future", "NG=F": "Future", 
-    "ZB=F": "Future", "ZN=F": "Future", "ZF=F": "Future", "6E=F": "Future", "6B=F": "Future",
-    
-    # INDICES
-    "DX-Y.NYB": "Index", "^GSPC": "Index", "^NDX": "Index", "^DJI": "Index", 
-    "^RUT": "Index", "^VIX": "Index", "^GDAXI": "Index",
-    
+    "BTC-USD": "Crypto", "ETH-USD": "Crypto", "SOL-USD": "Crypto", "BNB-USD": "Crypto",
+    "ADA-USD": "Crypto", "DOGE-USD": "Crypto", "XRP-USD": "Crypto", "AVAX-USD": "Crypto",
+
     # STOCKS (USA & ADRs)
     "AAPL": "Stock", "MSFT": "Stock", "GOOGL": "Stock", "AMZN": "Stock", "META": "Stock",
     "NVDA": "Stock", "TSLA": "Stock", "NFLX": "Stock", "AMD": "Stock", "INTC": "Stock",
@@ -81,51 +81,29 @@ SECTOR_MAP = {
     "DIS": "Stock", "CMCSA": "Stock", "T": "Stock", "VZ": "Stock", "TMUS": "Stock",
     "LOW": "Stock", "HD": "Stock", "UPS": "Stock", "FDX": "Stock", "TSCO": "Stock",
     "PLTR": "Stock", "SNOW": "Stock", "NET": "Stock", "CRWD": "Stock", "ZS": "Stock",
-    "OKTA": "Stock", "PANW": "Stock",
+    "OKTA": "Stock", "PANW": "Stock", "HOOD": "Stock", "COIN": "Stock",
 
-    # ARGENTINA (ADRS & LOCALES)
-    "CEPU.BA": "ArgStock", "YPFD.BA": "ArgStock", "GGAL.BA": "ArgStock", "BMA.BA": "ArgStock",
-    "PAMP.BA": "ArgStock", "TGSU2.BA": "ArgStock", "TRAN.BA": "ArgStock", "EDN.BA": "ArgStock",
-    "MIRG.BA": "ArgStock", "CRES.BA": "ArgStock", "ALUA.BA": "ArgStock", "TXAR.BA": "ArgStock",
-    "VALE.BA": "ArgStock", "LOMA.BA": "ArgStock", "TGNO4.BA": "ArgStock", "SUPV.BA": "ArgStock",
-    "BYMA.BA": "ArgStock", "COME.BA": "ArgStock", "IRSA.BA": "ArgStock", "AGRO.BA": "ArgStock",
-    "CADO.BA": "ArgStock", "SEMI.BA": "ArgStock", "MORI.BA": "ArgStock", "LEDE.BA": "ArgStock",
-    "BBAR.BA": "ArgStock", "CTIO.BA": "ArgStock", "DGCU2.BA": "ArgStock",
-    
-    # BONOS ARGENTINOS
-    "AL30": "ArgBond", "AL29": "ArgBond", "AL35": "ArgBond", "AL41": "ArgBond",
-    "GD29": "ArgBond", "GD30": "ArgBond", "GD35": "ArgBond", "GD38": "ArgBond",
-    "GD41": "ArgBond", "GD46": "ArgBond", "BONCER": "ArgBond", "T2X4": "ArgBond",
-    "TV24": "ArgBond", "DICP": "ArgBond", "PARA": "ArgBond", "PARP": "ArgBond"
+    # ARGENTINA (ADRs - NO BA)
+    "YPF": "ArgStock", "GGAL": "ArgStock", "BMA": "ArgStock", "PAM": "ArgStock",
+    "TGS": "ArgStock", "CEPU": "ArgStock", "CRESY": "ArgStock", "LOMA": "ArgStock",
+    "VIST": "ArgStock", "MELI": "ArgStock", "GLOB": "ArgStock", "DESP": "ArgStock"
 }
 
 # --- FUNCIONES ---
-
 def send_email_alert(data):
     if "xxxx" in EMAIL_PASSWORD: return 
     try:
         subject = f"🚀 DRL SIGNAL: {data['ticker']} ({data['signal']})"
-        body = f"""
-        ALERTA DRL TRADER (PURE AI)
-        ---------------------------
-        ACTIVO:   {data['ticker']} ({data['category']})
-        SEÑAL:    {data['signal']}
-        PRECIO:   ${data['price']}
-        OBJETIVO: ${data['tp']}
-        STOP:     ${data['sl']}
-        """
+        body = f"ALERTA IA: {data['ticker']} -> {data['signal']} @ ${data['price']}"
         msg = MIMEText(body)
         msg['Subject'] = subject
         msg['From'] = EMAIL_SENDER
         msg['To'] = EMAIL_RECEIVER
-
         server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
         server.login(EMAIL_SENDER, EMAIL_PASSWORD)
         server.send_message(msg)
         server.quit()
-        print(f"📧 Mail enviado: {data['ticker']}")
-    except Exception as e:
-        print(f"❌ Error mail: {e}")
+    except Exception as e: print(f"❌ Error mail: {e}")
 
 def get_time_estimate(price, tp, atr):
     if atr == 0: return "Indefinido"
@@ -137,16 +115,14 @@ def get_time_estimate(price, tp, atr):
 
 def analyze_ticker(ticker):
     try:
-        # Descarga con reintentos para evitar bloqueos
-        df = yf.download(ticker, period="3mo", interval="1d", progress=False, auto_adjust=True)
+        # Timeout corto para saltar rápido si falla
+        df = yf.download(ticker, period="3mo", interval="1d", progress=False, auto_adjust=True, timeout=5)
         
-        # Validación de datos vacíos
         if df.empty or len(df) < 50: return None
-
         if isinstance(df.columns, pd.MultiIndex): df.columns = df.columns.get_level_values(0)
         df.columns = [c.lower() for c in df.columns]
         
-        # Features Engineering
+        # Features
         df['log_ret'] = np.log(df['close'] / df['close'].shift(1)).fillna(0)
         df['vol_20'] = df['log_ret'].rolling(20).std()
         df['vol_60'] = df['log_ret'].rolling(60).std()
@@ -157,7 +133,6 @@ def analyze_ticker(ticker):
         df['dist_sma200'] = (df['close'] - sma_200) / sma_200
         df['vol_rel'] = (df['volume'] / df['volume'].rolling(20).mean()).fillna(1.0)
         
-        # RSI
         delta = df['close'].diff()
         gain = (delta.where(delta > 0, 0)).rolling(14).mean()
         loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
@@ -165,7 +140,7 @@ def analyze_ticker(ticker):
         df['rsi'] = 100 - (100 / (1 + rs))
         df['rsi_norm'] = (df['rsi'] - 50) / 50 
         
-        # PREDICCIÓN PURE AI (Sin Híbrido)
+        # IA
         obs = df.iloc[-1][['log_ret', 'vol_regime', 'dist_sma50', 'dist_sma200', 'vol_rel', 'rsi_norm']].values.astype(np.float32)
         action, _ = model.predict(obs, deterministic=True)
         
@@ -176,14 +151,13 @@ def analyze_ticker(ticker):
         if action == 1: signal = "LONG"
         elif action == 2: signal = "SHORT"
         
-        # Calculo TP/SL
         sl = price * 0.95; tp = price * 1.05
         if "LONG" in signal: sl=price-(2*atr); tp=price+(3*atr)
         elif "SHORT" in signal: sl=price+(2*atr); tp=price-(3*atr)
         
         stats = smart_metrics.get(ticker, {"win_rate": 0, "edge": 0})
         
-        result = {
+        return {
             "ticker": ticker,
             "category": SECTOR_MAP.get(ticker, "General"),
             "signal": signal,
@@ -194,72 +168,67 @@ def analyze_ticker(ticker):
             "win_rate": stats['win_rate'],
             "edge": stats['edge']
         }
-        
-        if signal != "NEUTRAL":
-            save_and_notify(result)
-            
-        return result
     except: return None
 
-def save_and_notify(signal_data):
-    history = []
-    if os.path.exists(HISTORY_PATH):
-        with open(HISTORY_PATH, 'r') as f:
-            try: history = json.load(f)
-            except: pass
-    
-    today = datetime.now().strftime("%Y-%m-%d")
-    exists = any(x['ticker'] == signal_data['ticker'] and x['date'] == today for x in history)
-    
-    if not exists:
-        signal_data['date'] = today
-        signal_data['status'] = "VIGENTE"
-        history.insert(0, signal_data)
-        with open(HISTORY_PATH, 'w') as f: json.dump(history[:100], f, indent=4)
-        send_email_alert(signal_data)
-
-# --- TAREA DE FONDO (ESCÁNER STEALTH) ---
+# --- LOOP MEJORADO: ACTUALIZA UNO POR UNO ---
 async def background_scanner():
     global cached_results
     watchlist = list(SECTOR_MAP.keys())
-    
-    # --- 1. SEÑAL DE PRUEBA (VISUALIZACIÓN INMEDIATA) ---
-    print("🧪 GENERANDO SEÑAL DE PRUEBA DE CONEXIÓN...")
-    test_signal = {
-        "ticker": "TEST-SYSTEM",
-        "category": "System Check",
-        "signal": "LONG",
-        "price": 1000.00,
-        "sl": 950.00, "tp": 1100.00,
-        "est_time": "Online OK",
-        "win_rate": 100, "edge": 100
-    }
-    cached_results = [test_signal] 
-    
     print(f"🤖 ESCÁNER INICIADO: {len(watchlist)} ACTIVOS")
     
     while True:
         try:
-            print(f"📡 Escaneando mercado (Modo Sigiloso)... {datetime.now().strftime('%H:%M')}")
-            temp_results = []
+            print(f"📡 Iniciando vuelta... {datetime.now().strftime('%H:%M')}")
             
+            # Barajamos la lista para que no siempre empiece por los mismos
+            import random
+            random.shuffle(watchlist)
+
             for t in watchlist:
                 res = analyze_ticker(t)
-                if res:
-                    temp_results.append(res)
                 
-                # --- PAUSA ANTI-BLOQUEO (CRUCIAL PARA 175 ACTIVOS) ---
-                await asyncio.sleep(3) 
-            
-            # Actualizamos la lista real solo al terminar la vuelta completa
-            if len(temp_results) > 0:
-                cached_results = temp_results
-                print(f"✅ Vuelta completada. {len(temp_results)} activos procesados.")
-            
+                if res:
+                    # LOGICA REAL-TIME: Actualizamos la lista global AL INSTANTE
+                    # 1. Quitamos el mensaje de "SISTEMA-ONLINE" si existe
+                    cached_results = [r for r in cached_results if r['ticker'] != "SISTEMA-ONLINE"]
+                    
+                    # 2. Si el ticker ya está, lo actualizamos. Si no, lo agregamos.
+                    found = False
+                    for i, item in enumerate(cached_results):
+                        if item['ticker'] == res['ticker']:
+                            cached_results[i] = res
+                            found = True
+                            break
+                    if not found:
+                        cached_results.insert(0, res) # Agregamos al principio
+                    
+                    # Solo imprimimos en consola si es algo interesante para no ensuciar log
+                    if res['signal'] != 'NEUTRAL':
+                         print(f"✅ SEÑAL ENCONTRADA: {res['ticker']} ({res['signal']})")
+                         
+                         # Mail y Historial
+                         history = []
+                         if os.path.exists(HISTORY_PATH):
+                             try:
+                                 with open(HISTORY_PATH, 'r') as f: history = json.load(f)
+                             except: pass
+                         
+                         today = datetime.now().strftime("%Y-%m-%d")
+                         exists = any(x['ticker'] == res['ticker'] and x['date'] == today for x in history)
+                         if not exists:
+                             res['date'] = today
+                             res['status'] = "VIGENTE"
+                             history.insert(0, res)
+                             with open(HISTORY_PATH, 'w') as f: json.dump(history[:100], f, indent=4)
+                             send_email_alert(res)
+
+                # Pausa necesaria
+                await asyncio.sleep(2)
+
         except Exception as e:
             print(f"⚠️ Error loop: {e}")
-            
-        await asyncio.sleep(600) # Espera 10 min entre vueltas
+        
+        await asyncio.sleep(60)
 
 @app.on_event("startup")
 async def startup_event():
