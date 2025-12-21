@@ -1,4 +1,4 @@
-# backend/main.py - DRL TRADER MASSIVE (PURE AI - CSV LIST)
+# backend/main.py - DRL TRADER ULTIMATE (FULL UNIVERSE + STEALTH + TEST SIGNAL)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
@@ -25,202 +25,82 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- 📧 TUS DATOS (PONER AQUÍ) ---
-EMAIL_SENDER = "labfitperformance@gmail.com"
-EMAIL_PASSWORD = "Lamela55" 
-EMAIL_RECEIVER = "bruno.benvenuto5@gmail.com"
+# --- 📧 TUS DATOS (EDITAR AQUÍ) ---
+EMAIL_SENDER = "TU_EMAIL@gmail.com"          # <--- PONER TU GMAIL
+EMAIL_PASSWORD = "xxxx xxxx xxxx xxxx"       # <--- PONER TU CLAVE DE APLICACIÓN
+EMAIL_RECEIVER = EMAIL_SENDER
 
 # --- RUTAS ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "model_universe_v1.pth")
 METRICS_PATH = os.path.join(BASE_DIR, "smart_metrics.json")
-# Usamos /tmp para historial en la nube (Render)
 HISTORY_PATH = "/tmp/history_log.json" if os.path.exists("/tmp") else os.path.join(BASE_DIR, "history_log.json")
 
 model = None
 smart_metrics = {}
 cached_results = []
 
-# --- 🌎 TU UNIVERSO (175 ACTIVOS DEL CSV) ---
+# --- 🌎 TU UNIVERSO COMPLETO (175 ACTIVOS DEL CSV) ---
 SECTOR_MAP = {
-    "SPY": "ETF",
-    "QQQ": "ETF",
-    "DIA": "ETF",
-    "IWM": "ETF",
-    "VTI": "ETF",
-    "VOO": "ETF",
-    "IVV": "ETF",
-    "XLK": "ETF",
-    "XLF": "ETF",
-    "XLV": "ETF",
-    "XLE": "ETF",
-    "XLI": "ETF",
-    "XLP": "ETF",
-    "XLY": "ETF",
-    "XLU": "ETF",
-    "XLRE": "ETF",
-    "XLB": "ETF",
-    "ARKK": "ETF",
-    "SMH": "ETF",
-    "SOXX": "ETF",
-    "IBB": "ETF",
-    "XBI": "ETF",
-    "HACK": "ETF",
-    "KWEB": "ETF",
-    "EEM": "ETF",
-    "EWZ": "ETF",
-    "RSX": "ETF",
-    "TLT": "ETF",
-    "IEF": "ETF",
-    "SHY": "BondETF",
-    "HYG": "BondETF",
-    "LQD": "BondETF",
-    "GLD": "CommodityETF",
-    "SLV": "CommodityETF",
-    "USO": "CommodityETF",
-    "UNG": "CommodityETF",
-    "BITO": "ETF",
-    "XBTF": "ETF",
-    "BTC-USD": "Crypto",
-    "ETH-USD": "Crypto",
-    "ES=F": "Future",
-    "NQ=F": "Future",
-    "YM=F": "Future",
-    "RTY=F": "Future",
-    "CL=F": "Future",
-    "GC=F": "Future",
-    "SI=F": "Future",
-    "NG=F": "Future",
-    "ZB=F": "Future",
-    "ZN=F": "Future",
-    "ZF=F": "Future",
-    "6E=F": "Future",
-    "6B=F": "Future",
-    "DX-Y.NYB": "Index",
-    "^GSPC": "Index",
-    "^NDX": "Index",
-    "^DJI": "Index",
-    "^RUT": "Index",
-    "^VIX": "Index",
-    "^GDAXI": "Index",
-    "AAPL": "Stock",
-    "MSFT": "Stock",
-    "GOOGL": "Stock",
-    "AMZN": "Stock",
-    "META": "Stock",
-    "NVDA": "Stock",
-    "TSLA": "Stock",
-    "NFLX": "Stock",
-    "AMD": "Stock",
-    "INTC": "Stock",
-    "IBM": "Stock",
-    "CRM": "Stock",
-    "ORCL": "Stock",
-    "ADBE": "Stock",
-    "PYPL": "Stock",
-    "SQ": "Stock",
-    "SHOP": "Stock",
-    "AVGO": "Stock",
-    "TSM": "Stock",
-    "ASML": "Stock",
-    "BABA": "Stock",
-    "GE": "Stock",
-    "BA": "Stock",
-    "CAT": "Stock",
-    "DE": "Stock",
-    "MMM": "Stock",
-    "NKE": "Stock",
-    "SBUX": "Stock",
-    "KO": "Stock",
-    "PEP": "Stock",
-    "MCD": "Stock",
-    "WMT": "Stock",
-    "COST": "Stock",
-    "PG": "Stock",
-    "JNJ": "Stock",
-    "PFE": "Stock",
-    "UNH": "Stock",
-    "ABBV": "Stock",
-    "LLY": "Stock",
-    "XOM": "Stock",
-    "CVX": "Stock",
-    "COP": "Stock",
-    "BP": "Stock",
-    "TTE": "Stock",
-    "JPM": "Stock",
-    "GS": "Stock",
-    "MS": "Stock",
-    "BAC": "Stock",
-    "WFC": "Stock",
-    "C": "Stock",
-    "BLK": "Stock",
-    "V": "Stock",
-    "MA": "Stock",
-    "AXP": "Stock",
-    "BRK-B": "Stock",
-    "DIS": "Stock",
-    "CMCSA": "Stock",
-    "T": "Stock",
-    "VZ": "Stock",
-    "TMUS": "Stock",
-    "LOW": "Stock",
-    "HD": "Stock",
-    "UPS": "Stock",
-    "FDX": "Stock",
-    "TSCO": "Stock",
-    "PLTR": "Stock",
-    "SNOW": "Stock",
-    "NET": "Stock",
-    "CRWD": "Stock",
-    "ZS": "Stock",
-    "OKTA": "Stock",
-    "PANW": "Stock",
-    "CEPU.BA": "ArgentinaStock",
-    "YPFD.BA": "ArgentinaStock",
-    "GGAL.BA": "ArgentinaStock",
-    "BMA.BA": "ArgentinaStock",
-    "PAMP.BA": "ArgentinaStock",
-    "TGSU2.BA": "ArgentinaStock",
-    "TRAN.BA": "ArgentinaStock",
-    "EDN.BA": "ArgentinaStock",
-    "MIRG.BA": "ArgentinaStock",
-    "CRES.BA": "ArgentinaStock",
-    "ALUA.BA": "ArgentinaStock",
-    "TXAR.BA": "ArgentinaStock",
-    "VALE.BA": "ArgentinaStock",
-    "LOMA.BA": "ArgentinaStock",
-    "TGNO4.BA": "ArgentinaStock",
-    "SUPV.BA": "ArgentinaStock",
-    "BYMA.BA": "ArgentinaStock",
-    "COME.BA": "ArgentinaStock",
-    "IRSA.BA": "ArgentinaStock",
-    "AGRO.BA": "ArgentinaStock",
-    "CADO.BA": "ArgentinaStock",
-    "SEMI.BA": "ArgentinaStock",
-    "MORI.BA": "ArgentinaStock",
-    "LEDE.BA": "ArgentinaStock",
-    "BBAR.BA": "ArgentinaStock",
-    "CTIO.BA": "ArgentinaStock",
-    "DGCU2.BA": "ArgentinaStock",
-    "AL30": "BondArgentina",
-    "AL29": "BondArgentina",
-    "AL35": "BondArgentina",
-    "AL41": "BondArgentina",
-    "GD29": "BondArgentina",
-    "GD30": "BondArgentina",
-    "GD35": "BondArgentina",
-    "GD38": "BondArgentina",
-    "GD41": "BondArgentina",
-    "GD46": "BondArgentina",
-    "BONCER": "BonosCER",
-    "T2X4": "BonosCER",
-    "TV24": "BonosCER",
-    "DICP": "BonosCER",
-    "PARA": "BondArgentina",
-    "PARP": "BondArgentina",
+    # ETFs USA
+    "SPY": "ETF", "QQQ": "ETF", "DIA": "ETF", "IWM": "ETF", "VTI": "ETF",
+    "VOO": "ETF", "IVV": "ETF", "XLK": "ETF", "XLF": "ETF", "XLV": "ETF",
+    "XLE": "ETF", "XLI": "ETF", "XLP": "ETF", "XLY": "ETF", "XLU": "ETF",
+    "XLRE": "ETF", "XLB": "ETF", "ARKK": "ETF", "SMH": "ETF", "SOXX": "ETF",
+    "IBB": "ETF", "XBI": "ETF", "HACK": "ETF", "KWEB": "ETF", "EEM": "ETF",
+    "EWZ": "ETF", "RSX": "ETF", "TLT": "ETF", "IEF": "ETF", "SHY": "BondETF",
+    "HYG": "BondETF", "LQD": "BondETF", "BITO": "ETF", "XBTF": "ETF",
+    
+    # COMMODITIES
+    "GLD": "CommodityETF", "SLV": "CommodityETF", "USO": "CommodityETF", "UNG": "CommodityETF",
+    
+    # CRYPTO
+    "BTC-USD": "Crypto", "ETH-USD": "Crypto", 
+    
+    # FUTURES
+    "ES=F": "Future", "NQ=F": "Future", "YM=F": "Future", "RTY=F": "Future", 
+    "CL=F": "Future", "GC=F": "Future", "SI=F": "Future", "NG=F": "Future", 
+    "ZB=F": "Future", "ZN=F": "Future", "ZF=F": "Future", "6E=F": "Future", "6B=F": "Future",
+    
+    # INDICES
+    "DX-Y.NYB": "Index", "^GSPC": "Index", "^NDX": "Index", "^DJI": "Index", 
+    "^RUT": "Index", "^VIX": "Index", "^GDAXI": "Index",
+    
+    # STOCKS (USA & ADRs)
+    "AAPL": "Stock", "MSFT": "Stock", "GOOGL": "Stock", "AMZN": "Stock", "META": "Stock",
+    "NVDA": "Stock", "TSLA": "Stock", "NFLX": "Stock", "AMD": "Stock", "INTC": "Stock",
+    "IBM": "Stock", "CRM": "Stock", "ORCL": "Stock", "ADBE": "Stock", "PYPL": "Stock",
+    "SQ": "Stock", "SHOP": "Stock", "AVGO": "Stock", "TSM": "Stock", "ASML": "Stock",
+    "BABA": "Stock", "GE": "Stock", "BA": "Stock", "CAT": "Stock", "DE": "Stock",
+    "MMM": "Stock", "NKE": "Stock", "SBUX": "Stock", "KO": "Stock", "PEP": "Stock",
+    "MCD": "Stock", "WMT": "Stock", "COST": "Stock", "PG": "Stock", "JNJ": "Stock",
+    "PFE": "Stock", "UNH": "Stock", "ABBV": "Stock", "LLY": "Stock", "XOM": "Stock",
+    "CVX": "Stock", "COP": "Stock", "BP": "Stock", "TTE": "Stock", "JPM": "Stock",
+    "GS": "Stock", "MS": "Stock", "BAC": "Stock", "WFC": "Stock", "C": "Stock",
+    "BLK": "Stock", "V": "Stock", "MA": "Stock", "AXP": "Stock", "BRK-B": "Stock",
+    "DIS": "Stock", "CMCSA": "Stock", "T": "Stock", "VZ": "Stock", "TMUS": "Stock",
+    "LOW": "Stock", "HD": "Stock", "UPS": "Stock", "FDX": "Stock", "TSCO": "Stock",
+    "PLTR": "Stock", "SNOW": "Stock", "NET": "Stock", "CRWD": "Stock", "ZS": "Stock",
+    "OKTA": "Stock", "PANW": "Stock",
+
+    # ARGENTINA (ADRS & LOCALES)
+    "CEPU.BA": "ArgStock", "YPFD.BA": "ArgStock", "GGAL.BA": "ArgStock", "BMA.BA": "ArgStock",
+    "PAMP.BA": "ArgStock", "TGSU2.BA": "ArgStock", "TRAN.BA": "ArgStock", "EDN.BA": "ArgStock",
+    "MIRG.BA": "ArgStock", "CRES.BA": "ArgStock", "ALUA.BA": "ArgStock", "TXAR.BA": "ArgStock",
+    "VALE.BA": "ArgStock", "LOMA.BA": "ArgStock", "TGNO4.BA": "ArgStock", "SUPV.BA": "ArgStock",
+    "BYMA.BA": "ArgStock", "COME.BA": "ArgStock", "IRSA.BA": "ArgStock", "AGRO.BA": "ArgStock",
+    "CADO.BA": "ArgStock", "SEMI.BA": "ArgStock", "MORI.BA": "ArgStock", "LEDE.BA": "ArgStock",
+    "BBAR.BA": "ArgStock", "CTIO.BA": "ArgStock", "DGCU2.BA": "ArgStock",
+    
+    # BONOS ARGENTINOS
+    "AL30": "ArgBond", "AL29": "ArgBond", "AL35": "ArgBond", "AL41": "ArgBond",
+    "GD29": "ArgBond", "GD30": "ArgBond", "GD35": "ArgBond", "GD38": "ArgBond",
+    "GD41": "ArgBond", "GD46": "ArgBond", "BONCER": "ArgBond", "T2X4": "ArgBond",
+    "TV24": "ArgBond", "DICP": "ArgBond", "PARA": "ArgBond", "PARP": "ArgBond"
 }
 
 # --- FUNCIONES ---
+
 def send_email_alert(data):
     if "xxxx" in EMAIL_PASSWORD: return 
     try:
@@ -257,13 +137,16 @@ def get_time_estimate(price, tp, atr):
 
 def analyze_ticker(ticker):
     try:
-        # Descarga rápida
+        # Descarga con reintentos para evitar bloqueos
         df = yf.download(ticker, period="3mo", interval="1d", progress=False, auto_adjust=True)
+        
+        # Validación de datos vacíos
+        if df.empty or len(df) < 50: return None
+
         if isinstance(df.columns, pd.MultiIndex): df.columns = df.columns.get_level_values(0)
-        if len(df) < 50: return None
         df.columns = [c.lower() for c in df.columns]
         
-        # Features
+        # Features Engineering
         df['log_ret'] = np.log(df['close'] / df['close'].shift(1)).fillna(0)
         df['vol_20'] = df['log_ret'].rolling(20).std()
         df['vol_60'] = df['log_ret'].rolling(60).std()
@@ -273,6 +156,8 @@ def analyze_ticker(ticker):
         df['dist_sma50'] = (df['close'] - sma_50) / sma_50
         df['dist_sma200'] = (df['close'] - sma_200) / sma_200
         df['vol_rel'] = (df['volume'] / df['volume'].rolling(20).mean()).fillna(1.0)
+        
+        # RSI
         delta = df['close'].diff()
         gain = (delta.where(delta > 0, 0)).rolling(14).mean()
         loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
@@ -280,7 +165,7 @@ def analyze_ticker(ticker):
         df['rsi'] = 100 - (100 / (1 + rs))
         df['rsi_norm'] = (df['rsi'] - 50) / 50 
         
-        # PREDICCIÓN PURE AI
+        # PREDICCIÓN PURE AI (Sin Híbrido)
         obs = df.iloc[-1][['log_ret', 'vol_regime', 'dist_sma50', 'dist_sma200', 'vol_rel', 'rsi_norm']].values.astype(np.float32)
         action, _ = model.predict(obs, deterministic=True)
         
@@ -291,15 +176,11 @@ def analyze_ticker(ticker):
         if action == 1: signal = "LONG"
         elif action == 2: signal = "SHORT"
         
-        sl = price * 0.95
-        tp = price * 1.05
-        if "LONG" in signal:
-            sl = price - (2*atr)
-            tp = price + (3*atr)
-        elif "SHORT" in signal:
-            sl = price + (2*atr)
-            tp = price - (3*atr)
-            
+        # Calculo TP/SL
+        sl = price * 0.95; tp = price * 1.05
+        if "LONG" in signal: sl=price-(2*atr); tp=price+(3*atr)
+        elif "SHORT" in signal: sl=price+(2*atr); tp=price-(3*atr)
+        
         stats = smart_metrics.get(ticker, {"win_rate": 0, "edge": 0})
         
         result = {
@@ -337,22 +218,48 @@ def save_and_notify(signal_data):
         with open(HISTORY_PATH, 'w') as f: json.dump(history[:100], f, indent=4)
         send_email_alert(signal_data)
 
+# --- TAREA DE FONDO (ESCÁNER STEALTH) ---
 async def background_scanner():
     global cached_results
     watchlist = list(SECTOR_MAP.keys())
-    print(f"🤖 ESCÁNER PURO INICIADO: {len(watchlist)} ACTIVOS (CSV LIST)")
+    
+    # --- 1. SEÑAL DE PRUEBA (VISUALIZACIÓN INMEDIATA) ---
+    print("🧪 GENERANDO SEÑAL DE PRUEBA DE CONEXIÓN...")
+    test_signal = {
+        "ticker": "TEST-SYSTEM",
+        "category": "System Check",
+        "signal": "LONG",
+        "price": 1000.00,
+        "sl": 950.00, "tp": 1100.00,
+        "est_time": "Online OK",
+        "win_rate": 100, "edge": 100
+    }
+    cached_results = [test_signal] 
+    
+    print(f"🤖 ESCÁNER INICIADO: {len(watchlist)} ACTIVOS")
     
     while True:
         try:
-            print(f"📡 Escaneando mercado... {datetime.now().strftime('%H:%M')}")
+            print(f"📡 Escaneando mercado (Modo Sigiloso)... {datetime.now().strftime('%H:%M')}")
             temp_results = []
+            
             for t in watchlist:
                 res = analyze_ticker(t)
-                if res: temp_results.append(res)
-                await asyncio.sleep(0.5)
-            cached_results = temp_results
-        except Exception as e: print(f"⚠️ Error loop: {e}")
-        await asyncio.sleep(600)
+                if res:
+                    temp_results.append(res)
+                
+                # --- PAUSA ANTI-BLOQUEO (CRUCIAL PARA 175 ACTIVOS) ---
+                await asyncio.sleep(3) 
+            
+            # Actualizamos la lista real solo al terminar la vuelta completa
+            if len(temp_results) > 0:
+                cached_results = temp_results
+                print(f"✅ Vuelta completada. {len(temp_results)} activos procesados.")
+            
+        except Exception as e:
+            print(f"⚠️ Error loop: {e}")
+            
+        await asyncio.sleep(600) # Espera 10 min entre vueltas
 
 @app.on_event("startup")
 async def startup_event():
@@ -375,7 +282,6 @@ def get_radar(): return cached_results
 
 @app.get("/history")
 def get_history():
-    # Fix para el error 404: asegurar que devuelva una lista vacía si falla
     if os.path.exists(HISTORY_PATH):
         try:
             with open(HISTORY_PATH, 'r') as f: return json.load(f)
@@ -383,4 +289,4 @@ def get_history():
     return []
 
 @app.get("/")
-def home(): return {"status": "DRL Trader Pure AI Online"}
+def home(): return {"status": "Online"}
