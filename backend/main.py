@@ -1,4 +1,4 @@
-# backend/main.py - DRL TRADER FINAL (CRONJOB FIX + GRAPH FIX + MATRIX LOGS)
+# backend/main.py - DRL TRADER (DETAILED LOGS + CRON FIX)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
@@ -27,8 +27,8 @@ app.add_middleware(
 )
 
 # --- 📧 TUS DATOS (EDITAR AQUÍ) ---
-EMAIL_SENDER = "TU_EMAIL@gmail.com"          # <--- PON TU EMAIL
-EMAIL_PASSWORD = "xxxx xxxx xxxx xxxx"       # <--- PON TU CONTRASEÑA DE APLICACIÓN
+EMAIL_SENDER = "TU_EMAIL@gmail.com"          # <--- TU GMAIL
+EMAIL_PASSWORD = "xxxx xxxx xxxx xxxx"       # <--- TU CLAVE DE APLICACIÓN
 EMAIL_RECEIVER = EMAIL_SENDER
 
 # --- RUTAS ---
@@ -40,7 +40,7 @@ HISTORY_PATH = "/tmp/history_log.json" if os.path.exists("/tmp") else os.path.jo
 model = None
 smart_metrics = {}
 
-# Señal inicial (USAMOS UN ACTIVO REAL PARA QUE EL GRÁFICO NO SE ROMPA)
+# Señal inicial de prueba (BTC REAL)
 cached_results = [{
     "ticker": "BTC-USD",
     "category": "System Check",
@@ -50,7 +50,7 @@ cached_results = [{
     "win_rate": 100, "edge": 100
 }]
 
-# --- 🌎 UNIVERSO LIMPIO (SIN ERRORES) ---
+# --- 🌎 UNIVERSO LIMPIO ---
 SECTOR_MAP = {
     # ETFs Principales
     "SPY": "ETF", "QQQ": "ETF", "DIA": "ETF", "IWM": "ETF", "VTI": "ETF",
@@ -97,7 +97,18 @@ def send_email_alert(data):
     if "xxxx" in EMAIL_PASSWORD: return 
     try:
         subject = f"🚀 DRL SIGNAL: {data['ticker']} ({data['signal']})"
-        body = f"ALERTA IA: {data['ticker']} -> {data['signal']} @ ${data['price']}"
+        body = f"""
+        ALERTA IA DETALLADA
+        -------------------
+        ACTIVO:   {data['ticker']}
+        SEÑAL:    {data['signal']}
+        PRECIO:   ${data['price']}
+        
+        OBJETIVO: ${data['tp']}
+        STOP:     ${data['sl']}
+        
+        TIEMPO EST: {data['est_time']}
+        """
         msg = MIMEText(body)
         msg['Subject'] = subject
         msg['From'] = EMAIL_SENDER
@@ -118,7 +129,7 @@ def get_time_estimate(price, tp, atr):
 
 def analyze_ticker(ticker):
     try:
-        # Timeout corto (5s) para saltar rápido si falla
+        # Timeout corto
         df = yf.download(ticker, period="3mo", interval="1d", progress=False, auto_adjust=True, timeout=5)
         
         if df.empty or len(df) < 50: return None
@@ -143,17 +154,13 @@ def analyze_ticker(ticker):
         df['rsi'] = 100 - (100 / (1 + rs))
         df['rsi_norm'] = (df['rsi'] - 50) / 50 
         
-        # IA PREDICTION
+        # IA
         obs = df.iloc[-1][['log_ret', 'vol_regime', 'dist_sma50', 'dist_sma200', 'vol_rel', 'rsi_norm']].values.astype(np.float32)
         action, _ = model.predict(obs, deterministic=True)
         
         price = df.iloc[-1]['close']
         atr = (df['high'] - df['low']).rolling(14).mean().iloc[-1]
         rsi_val = df.iloc[-1]['rsi']
-
-        # --- MODO MATRIX: LOGS ACTIVOS ---
-        print(f"🧐 {ticker}: Acción IA={action} | Precio=${price:.2f} | RSI={rsi_val:.1f}")
-        # ---------------------------------
         
         signal = "NEUTRAL"
         if action == 1: signal = "LONG"
@@ -165,6 +172,21 @@ def analyze_ticker(ticker):
         
         stats = smart_metrics.get(ticker, {"win_rate": 0, "edge": 0})
         
+        est_time = get_time_estimate(price, tp, atr) if signal != "NEUTRAL" else "Monitoreando..."
+
+        # --- LOGICA DE IMPRESIÓN MEJORADA ---
+        if signal != "NEUTRAL":
+            print(f"\n✅ SEÑAL DETECTADA: {ticker}")
+            print(f"   🚀 Estrategia: {signal}")
+            print(f"   💰 Precio: ${price:.2f}")
+            print(f"   🎯 Objetivo (TP): ${tp:.2f}")
+            print(f"   🛑 Stop Loss (SL): ${sl:.2f}")
+            print(f"   ⏳ Tiempo Est: {est_time}")
+            print("-" * 30)
+        else:
+            # Log discreto para neutrales
+            print(f"🧐 {ticker}: Acción=0 | RSI={rsi_val:.1f} | Precio=${price:.2f}")
+        
         return {
             "ticker": ticker,
             "category": SECTOR_MAP.get(ticker, "General"),
@@ -172,23 +194,20 @@ def analyze_ticker(ticker):
             "price": round(price, 2),
             "sl": round(sl, 2),
             "tp": round(tp, 2),
-            "est_time": get_time_estimate(price, tp, atr) if signal != "NEUTRAL" else "Monitoreando...",
+            "est_time": est_time,
             "win_rate": stats['win_rate'],
             "edge": stats['edge']
         }
-    except Exception as e: 
-        # print(f"⚠️ Skip {ticker}: {e}") # Comentado para no ensuciar log si falla uno
-        return None
+    except Exception as e: return None
 
-# --- LOOP MEJORADO ---
+# --- LOOP ---
 async def background_scanner():
     global cached_results
     watchlist = list(SECTOR_MAP.keys())
     
     # Señal de prueba
-    print("🧪 GENERANDO SEÑAL DE PRUEBA (BTC-USD)...")
     test_signal = {
-        "ticker": "BTC-USD",  # <--- FIX: ACTIVO REAL PARA QUE EL GRÁFICO ANDE
+        "ticker": "BTC-USD",
         "category": "System Check",
         "signal": "LONG",
         "price": 98000.00, "sl": 95000, "tp": 105000,
@@ -208,9 +227,8 @@ async def background_scanner():
                 res = analyze_ticker(t)
                 
                 if res:
-                    # Actualizar lista al instante
-                    # Borramos la señal de prueba si ya hay datos reales, o la dejamos si es lo único
-                    # pero actualizamos si encontramos BTC real.
+                    # Streaming
+                    cached_results = [r for r in cached_results if r['ticker'] != "TEST-ONLINE" and r['ticker'] != "SISTEMA-ONLINE"]
                     
                     found = False
                     for i, item in enumerate(cached_results):
@@ -221,17 +239,13 @@ async def background_scanner():
                     if not found:
                         cached_results.insert(0, res)
                     
-                    # Si hay señal real
+                    # Guardar historia si es señal real
                     if res['signal'] != 'NEUTRAL':
-                         print(f"✅ SEÑAL: {res['ticker']} ({res['signal']})")
                          save_history(res)
 
-                # Pausa necesaria anti-bloqueo
                 await asyncio.sleep(2)
 
-        except Exception as e:
-            print(f"⚠️ Error loop: {e}")
-        
+        except Exception as e: print(f"⚠️ Error loop: {e}")
         await asyncio.sleep(600)
 
 def save_history(res):
@@ -277,7 +291,7 @@ def get_history():
         except: return []
     return []
 
-# --- FIX PARA CRONJOB (ESTO ARREGLA EL "FAIL") ---
+# FIX PARA CRONJOB
 @app.head("/")
 @app.get("/")
 def home(): return {"status": "Online"}
