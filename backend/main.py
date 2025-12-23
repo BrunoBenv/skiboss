@@ -1,4 +1,4 @@
-# backend/main.py - DRL TRADER (REAL-TIME STREAMING + CLEAN LIST)
+# backend/main.py - DRL TRADER (MATRIX MODE: LOGS ACTIVOS + LISTA LIMPIA)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
@@ -9,6 +9,7 @@ import json
 import os
 import smtplib
 import asyncio
+import random
 from email.mime.text import MIMEText
 from datetime import datetime
 from stable_baselines3 import PPO
@@ -26,9 +27,9 @@ app.add_middleware(
 )
 
 # --- 📧 TUS DATOS ---
-EMAIL_SENDER = "labfitperformance@gmail.com"
-EMAIL_PASSWORD = "Lamela55" 
-EMAIL_RECEIVER = "bruno.benvenuto5@gmail.com"
+EMAIL_SENDER = "TU_EMAIL@gmail.com"          # <--- REVISA TU EMAIL
+EMAIL_PASSWORD = "xxxx xxxx xxxx xxxx"       # <--- REVISA TU CLAVE
+EMAIL_RECEIVER = EMAIL_SENDER
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "model_universe_v1.pth")
@@ -38,19 +39,19 @@ HISTORY_PATH = "/tmp/history_log.json" if os.path.exists("/tmp") else os.path.jo
 model = None
 smart_metrics = {}
 
-# --- INICIALIZAMOS CON SEÑAL DE CARGA PARA QUE NO SE VEA VACÍO ---
+# Señal de carga inicial
 cached_results = [{
     "ticker": "SISTEMA-ONLINE",
     "category": "Estado",
     "signal": "ESPERANDO",
     "price": 0, "sl": 0, "tp": 0,
-    "est_time": "Escaneando...",
+    "est_time": "Iniciando...",
     "win_rate": 100, "edge": 0
 }]
 
 # --- 🌎 UNIVERSO LIMPIO (SIN XBTF NI BASURA) ---
 SECTOR_MAP = {
-    # ETFs
+    # ETFs (Principales)
     "SPY": "ETF", "QQQ": "ETF", "DIA": "ETF", "IWM": "ETF", "VTI": "ETF",
     "VOO": "ETF", "IVV": "ETF", "XLK": "ETF", "XLF": "ETF", "XLV": "ETF",
     "XLE": "ETF", "XLI": "ETF", "XLP": "ETF", "XLY": "ETF", "XLU": "ETF",
@@ -62,9 +63,10 @@ SECTOR_MAP = {
     # COMMODITIES
     "GLD": "CommodityETF", "SLV": "CommodityETF", "USO": "CommodityETF", "UNG": "CommodityETF",
     
-    # CRYPTO
+    # CRYPTO (TOP)
     "BTC-USD": "Crypto", "ETH-USD": "Crypto", "SOL-USD": "Crypto", "BNB-USD": "Crypto",
     "ADA-USD": "Crypto", "DOGE-USD": "Crypto", "XRP-USD": "Crypto", "AVAX-USD": "Crypto",
+    "DOT-USD": "Crypto", "LINK-USD": "Crypto", "LTC-USD": "Crypto", "MATIC-USD": "Crypto",
 
     # STOCKS (USA & ADRs)
     "AAPL": "Stock", "MSFT": "Stock", "GOOGL": "Stock", "AMZN": "Stock", "META": "Stock",
@@ -115,7 +117,7 @@ def get_time_estimate(price, tp, atr):
 
 def analyze_ticker(ticker):
     try:
-        # Timeout corto para saltar rápido si falla
+        # Timeout corto (5s) para no trabar el loop
         df = yf.download(ticker, period="3mo", interval="1d", progress=False, auto_adjust=True, timeout=5)
         
         if df.empty or len(df) < 50: return None
@@ -140,12 +142,18 @@ def analyze_ticker(ticker):
         df['rsi'] = 100 - (100 / (1 + rs))
         df['rsi_norm'] = (df['rsi'] - 50) / 50 
         
-        # IA
+        # IA PREDICTION
         obs = df.iloc[-1][['log_ret', 'vol_regime', 'dist_sma50', 'dist_sma200', 'vol_rel', 'rsi_norm']].values.astype(np.float32)
         action, _ = model.predict(obs, deterministic=True)
         
         price = df.iloc[-1]['close']
         atr = (df['high'] - df['low']).rolling(14).mean().iloc[-1]
+        rsi_val = df.iloc[-1]['rsi']
+
+        # --- MODO MATRIX: LOGS ACTIVOS ---
+        # Esto imprime en la consola de Render CADA activo, aunque sea Neutral
+        print(f"🧐 {ticker}: Acción IA={action} | Precio=${price:.2f} | RSI={rsi_val:.1f}")
+        # ---------------------------------
         
         signal = "NEUTRAL"
         if action == 1: signal = "LONG"
@@ -168,31 +176,42 @@ def analyze_ticker(ticker):
             "win_rate": stats['win_rate'],
             "edge": stats['edge']
         }
-    except: return None
+    except Exception as e: 
+        # Log de error limpio
+        # print(f"⚠️ Skip {ticker}: {e}") 
+        return None
 
-# --- LOOP MEJORADO: ACTUALIZA UNO POR UNO ---
+# --- LOOP MEJORADO (SHUFFLE + STREAMING) ---
 async def background_scanner():
     global cached_results
     watchlist = list(SECTOR_MAP.keys())
+    
+    # Señal de prueba inicial
+    print("🧪 GENERANDO SEÑAL DE PRUEBA...")
+    test_signal = {
+        "ticker": "TEST-ONLINE",
+        "category": "System",
+        "signal": "LONG",
+        "price": 123.45, "sl": 100, "tp": 150,
+        "est_time": "Conectado",
+        "win_rate": 100, "edge": 100
+    }
+    cached_results = [test_signal]
+
     print(f"🤖 ESCÁNER INICIADO: {len(watchlist)} ACTIVOS")
     
     while True:
         try:
             print(f"📡 Iniciando vuelta... {datetime.now().strftime('%H:%M')}")
-            
-            # Barajamos la lista para que no siempre empiece por los mismos
-            import random
-            random.shuffle(watchlist)
+            random.shuffle(watchlist) # Mezclamos para que las Crypto salgan antes a veces
 
             for t in watchlist:
                 res = analyze_ticker(t)
                 
                 if res:
-                    # LOGICA REAL-TIME: Actualizamos la lista global AL INSTANTE
-                    # 1. Quitamos el mensaje de "SISTEMA-ONLINE" si existe
-                    cached_results = [r for r in cached_results if r['ticker'] != "SISTEMA-ONLINE"]
+                    # STREAMING: Actualizar lista al instante
+                    cached_results = [r for r in cached_results if r['ticker'] != "TEST-ONLINE" and r['ticker'] != "SISTEMA-ONLINE"]
                     
-                    # 2. Si el ticker ya está, lo actualizamos. Si no, lo agregamos.
                     found = False
                     for i, item in enumerate(cached_results):
                         if item['ticker'] == res['ticker']:
@@ -200,27 +219,12 @@ async def background_scanner():
                             found = True
                             break
                     if not found:
-                        cached_results.insert(0, res) # Agregamos al principio
+                        cached_results.insert(0, res)
                     
-                    # Solo imprimimos en consola si es algo interesante para no ensuciar log
+                    # Si hay señal real, guardar y mail
                     if res['signal'] != 'NEUTRAL':
-                         print(f"✅ SEÑAL ENCONTRADA: {res['ticker']} ({res['signal']})")
-                         
-                         # Mail y Historial
-                         history = []
-                         if os.path.exists(HISTORY_PATH):
-                             try:
-                                 with open(HISTORY_PATH, 'r') as f: history = json.load(f)
-                             except: pass
-                         
-                         today = datetime.now().strftime("%Y-%m-%d")
-                         exists = any(x['ticker'] == res['ticker'] and x['date'] == today for x in history)
-                         if not exists:
-                             res['date'] = today
-                             res['status'] = "VIGENTE"
-                             history.insert(0, res)
-                             with open(HISTORY_PATH, 'w') as f: json.dump(history[:100], f, indent=4)
-                             send_email_alert(res)
+                         print(f"✅ SEÑAL: {res['ticker']} ({res['signal']})")
+                         save_history(res)
 
                 # Pausa necesaria
                 await asyncio.sleep(2)
@@ -228,7 +232,23 @@ async def background_scanner():
         except Exception as e:
             print(f"⚠️ Error loop: {e}")
         
-        await asyncio.sleep(60)
+        await asyncio.sleep(600)
+
+def save_history(res):
+     history = []
+     if os.path.exists(HISTORY_PATH):
+         try:
+             with open(HISTORY_PATH, 'r') as f: history = json.load(f)
+         except: pass
+     
+     today = datetime.now().strftime("%Y-%m-%d")
+     exists = any(x['ticker'] == res['ticker'] and x['date'] == today for x in history)
+     if not exists:
+         res['date'] = today
+         res['status'] = "VIGENTE"
+         history.insert(0, res)
+         with open(HISTORY_PATH, 'w') as f: json.dump(history[:100], f, indent=4)
+         send_email_alert(res)
 
 @app.on_event("startup")
 async def startup_event():
@@ -257,6 +277,7 @@ def get_history():
         except: return []
     return []
 
+# FIX PARA HEALTH CHECK (Evita error 405 Method Not Allowed)
+@app.head("/")
 @app.get("/")
 def home(): return {"status": "Online"}
-
